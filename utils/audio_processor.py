@@ -4,14 +4,21 @@ from pydub import AudioSegment
 
 import os
 
-DOWNLOAD_DIR = 'downloades'
-os.makedirs(DOWNLOAD_DIR,exist_ok = True)
+DOWNLOAD_DIR = 'downloads'
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-def download_youtube_audio(url :str) ->str:
+def download_youtube_audio(url: str) -> str:
     output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
+    
+    # Base options with YouTube-specific workarounds
     ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": output_path,
+        "quiet": False,
+        "no_warnings": False,
+        "socket_timeout": 30,
+        # YouTube security workarounds
+        "extractor_args": {"youtube": {"skip": ["hls", "dash"]}},
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
@@ -19,12 +26,46 @@ def download_youtube_audio(url :str) ->str:
                 "preferredquality": "192",
             }
         ],
-        "quiet": True,
     }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info).replace(".webm", ".wav").replace(".m4a", ".wav")
-    return filename
+    
+    try:
+        print("📥 Attempting standard download...")
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            filename = ydl.prepare_filename(info).replace(".webm", ".wav").replace(".m4a", ".wav")
+        return filename
+    except yt_dlp.utils.DownloadError as e:
+        if "nsig extraction failed" in str(e) or "Requested format is not available" in str(e):
+            print(f"⚠️  Standard download failed. Trying fallback format...")
+            # Fallback: download best available without audio extraction
+            ydl_opts_fallback = {
+                "format": "best",
+                "outtmpl": output_path,
+                "quiet": False,
+                "postprocessors": [
+                    {
+                        "key": "FFmpegExtractAudio",
+                        "preferredcodec": "wav",
+                        "preferredquality": "192",
+                    }
+                ],
+            }
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts_fallback) as ydl:
+                    info = ydl.extract_info(url, download=True)
+                    filename = ydl.prepare_filename(info).replace(".webm", ".wav").replace(".m4a", ".wav").replace(".mp4", ".wav")
+                return filename
+            except Exception as fallback_error:
+                print(f"❌ Both download attempts failed:")
+                print(f"   Original error: {e}")
+                print(f"   Fallback error: {fallback_error}")
+                raise
+        else:
+            print(f"❌ Download failed: {e}")
+            raise
+    except Exception as e:
+        print(f"❌ Unexpected error: {e}")
+        raise
 
 
 
@@ -66,4 +107,6 @@ def process_input(source: str) -> list:
     print(f"Audio ready — {len(chunks)} chunk(s) created.")
     return chunks
 
-
+# YouTube downloads currently blocked by YouTube's security changes
+# Use local audio files for testing instead
+# Example: process_input("path/to/audio.mp3")
