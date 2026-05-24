@@ -37,3 +37,14 @@ st.markdown("""
     --warning: #f59e0b;
     --danger: #ef4444;
 }
+
+/* ── Global Reset ── */
+html, body, [class*="css"] {
+    font-family: 'JetBrains Mono', monospace;
+    background-color: var(--bg) !important;
+    color: var(--text) !important;
+}
+
+.stApp {
+    background: var(--bg) !important;
+}
