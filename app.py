@@ -48,3 +48,16 @@ html, body, [class*="css"] {
 .stApp {
     background: var(--bg) !important;
 }
+/* Animated grid background */
+.stApp::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image:
+        linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+}
