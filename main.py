@@ -8,10 +8,19 @@ from core.rag_engine import build_rag_chain, ask_question
 
 load_dotenv()
 
-def run_pipeline(source :str, language :str = "english") -> dict:
+def run_pipeline(
+    source: str,
+    language: str = "english",
+    youtube_cookies_file: str | None = None,
+    youtube_cookies_browser: str | None = None,
+) -> dict:
     print("starting AI Video Assistant")
 
-    chunks = process_input(source)
+    chunks = process_input(
+        source,
+        youtube_cookies_file=youtube_cookies_file,
+        youtube_cookies_browser=youtube_cookies_browser,
+    )
 
     transcript = transcribe_all(chunks,language)
     print(f"raw transcription (first 300 characters ) {transcript[:300]}")
@@ -41,7 +50,9 @@ if __name__ == "__main__":
     # CLI entry point
     source = input("Enter YouTube URL or local file path: ").strip()
     language = input("Language (english/hinglish): ").strip() or "english"
-    result = run_pipeline(source, language)
+    youtube_cookies_file = input("YouTube cookies.txt path (optional): ").strip() or None
+    youtube_cookies_browser = input("Browser cookies source (optional: chrome/edge/firefox/brave): ").strip() or None
+    result = run_pipeline(source, language, youtube_cookies_file, youtube_cookies_browser)
 
     print("\n" + "=" * 60)
     print(f"📌 Title: {result['title']}")
