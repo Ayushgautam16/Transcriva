@@ -7,7 +7,11 @@ import os
 DOWNLOAD_DIR = 'downloads'
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-def download_youtube_audio(url: str) -> str:
+def download_youtube_audio(
+    url: str,
+    cookiefile: str | None = None,
+    cookiesfrombrowser: str | None = None,
+) -> str:
     output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
     
     # Base options with YouTube-specific workarounds
@@ -28,6 +32,11 @@ def download_youtube_audio(url: str) -> str:
         ],
     }
     
+    if cookiefile:
+        ydl_opts["cookiefile"] = cookiefile
+    if cookiesfrombrowser:
+        ydl_opts["cookiesfrombrowser"] = (cookiesfrombrowser,)
+        
     try:
         print("📥 Attempting standard download...")
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -50,6 +59,11 @@ def download_youtube_audio(url: str) -> str:
                     }
                 ],
             }
+            if cookiefile:
+                ydl_opts_fallback["cookiefile"] = cookiefile
+            if cookiesfrombrowser:
+                ydl_opts_fallback["cookiesfrombrowser"] = (cookiesfrombrowser,)
+                
             try:
                 with yt_dlp.YoutubeDL(ydl_opts_fallback) as ydl:
                     info = ydl.extract_info(url, download=True)
@@ -94,10 +108,18 @@ def chunk_audio(wav_path : str , chunk_minutes : int = 10) -> list:
     
     return chunks
 
-def process_input(source: str) -> list:
+def process_input(
+    source: str,
+    youtube_cookies_file: str | None = None,
+    youtube_cookies_browser: str | None = None,
+) -> list:
     if source.startswith("http://") or source.startswith("https://"):
         print("Detected YouTube URL. Downloading audio...")
-        wav_path = download_youtube_audio(source)
+        wav_path = download_youtube_audio(
+            source,
+            cookiefile=youtube_cookies_file,
+            cookiesfrombrowser=youtube_cookies_browser,
+        )
     else:
         print("Detected local file. Converting to WAV...")
         wav_path = convert_to_wav(source)
