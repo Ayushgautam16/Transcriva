@@ -6,7 +6,6 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 import os 
 
-
 def get_llm():
     return ChatMistralAI(model = "mistral-small-latest", mistral_api_key = os.getenv("MISTRAL_API_KEY"),temperature=0.2)
 
@@ -32,7 +31,6 @@ def extract_action_items(transcript:str)->str:
     )
 
     return chain.invoke(transcript)
-
 
 def extract_key_decisions(transcript: str) -> str:
     chain = build_chain(

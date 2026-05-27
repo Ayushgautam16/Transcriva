@@ -340,6 +340,20 @@ with st.sidebar:
 
     language = st.selectbox("Language", ["english", "hinglish"], index=0)
 
+<<<<<<< HEAD
+=======
+    with st.expander("YouTube access", expanded=False):
+        youtube_cookies_file = st.text_input(
+            "Cookies file",
+            placeholder=r"C:\path\to\cookies.txt",
+        )
+        youtube_cookies_browser = st.selectbox(
+            "Browser cookies",
+            ["", "chrome", "edge", "firefox", "brave"],
+            format_func=lambda value: "None" if not value else value.title(),
+        )
+
+>>>>>>> 783873f6988b4a38d0948c31360369d16c3b6df9
     run_btn = st.button("⚡  Analyse", use_container_width=True)
 
     if st.session_state.pipeline_done:
@@ -380,7 +394,15 @@ if run_btn:
                 st.info("⚙️ Pipeline running — see sidebar for live status…")
 
             update_step("audio", "active")
+<<<<<<< HEAD
             chunks = process_input(source)
+=======
+            chunks = process_input(
+                source,
+                youtube_cookies_file=youtube_cookies_file,
+                youtube_cookies_browser=youtube_cookies_browser,
+            )
+>>>>>>> 783873f6988b4a38d0948c31360369d16c3b6df9
             update_step("audio", "done")
 
             update_step("transcript", "active")
@@ -542,4 +564,8 @@ else:
             <span class="badge badge-cyan">Summarisation</span>
             <span class="badge badge-green">RAG Chat</span>
         </div>
+<<<<<<< HEAD
     </div>""", unsafe_allow_html=True)
+=======
+    </div>""", unsafe_allow_html=True)
+>>>>>>> 783873f6988b4a38d0948c31360369d16c3b6df9
