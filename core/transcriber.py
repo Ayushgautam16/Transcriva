@@ -16,22 +16,35 @@ SARVAM_STT_TRANSLATE_URL = "https://api.sarvam.ai/speech-to-text-translate"
 SARVAM_MODEL = os.getenv("SARVAM_STT_MODEL", "saaras:v2.5")
 
 _model = None
+_loaded_model_name = None
 
 
-def load_model():
+def load_model(model_name: str = None):
 
-    global _model  
+    global _model, _loaded_model_name  
 
-    if _model is None: 
-        print(f"Loading Whisper model: {WHISPER_MODEL} ...")
-        _model = whisper.load_model(WHISPER_MODEL) 
-        print("Whisper model loaded.")
+    if model_name is None:
+        model_name = WHISPER_MODEL
+
+    if _model is None or _loaded_model_name != model_name: 
+        print(f"Loading Whisper model: {model_name} ...")
+        # Free old model memory if loading a different one
+        _model = None
+        import gc
+        import torch
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            
+        _model = whisper.load_model(model_name) 
+        _loaded_model_name = model_name
+        print(f"Whisper model {model_name} loaded.")
     return _model 
 
 
-def transcribe_chunk_whisper(chunk_path: str) -> str:
+def transcribe_chunk_whisper(chunk_path: str, whisper_model: str = None) -> str:
 
-    model = load_model()  
+    model = load_model(whisper_model)  
 
     result = model.transcribe(chunk_path, task="transcribe")  
     return result["text"]  
@@ -92,7 +105,7 @@ def transcribe_chunk_sarvam(chunk_path: str) -> str:
 
 
 
-def transcribe_chunk(chunk_path: str, language: str = "english") -> str:
+def transcribe_chunk(chunk_path: str, language: str = "english", whisper_model: str = "small") -> str:
     """
     Route one chunk to Whisper or Sarvam depending on language choice.
     - english  → Whisper (local model)
@@ -100,21 +113,21 @@ def transcribe_chunk(chunk_path: str, language: str = "english") -> str:
     """
     if language.lower() == "hinglish":
         return transcribe_chunk_sarvam(chunk_path)
-    return transcribe_chunk_whisper(chunk_path)
+    return transcribe_chunk_whisper(chunk_path, whisper_model)
 
 
-def transcribe_all(chunks: list, language: str = "english") -> str:
+def transcribe_all(chunks: list, language: str = "english", whisper_model: str = "small") -> str:
 
     full_transcript = "" 
 
-    engine = "Sarvam AI" if language.lower() == "hinglish" else "Whisper"
+    engine = "Sarvam AI" if language.lower() == "hinglish" else f"Whisper ({whisper_model})"
     print(f"Using {engine} for transcription.")
 
     for i, chunk in enumerate(chunks):  
 
         print(f"Transcribing chunk {i + 1}/{len(chunks)}...")
 
-        text = transcribe_chunk(chunk, language=language)  
+        text = transcribe_chunk(chunk, language=language, whisper_model=whisper_model)  
 
         full_transcript += text + " "  
 
