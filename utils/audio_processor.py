@@ -38,14 +38,14 @@ def download_youtube_audio(
         ydl_opts["cookiesfrombrowser"] = (cookiesfrombrowser,)
         
     try:
-        print("📥 Attempting standard download...")
+        print("[INFO] Attempting standard download...")
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info).replace(".webm", ".wav").replace(".m4a", ".wav")
         return filename
     except yt_dlp.utils.DownloadError as e:
         if "nsig extraction failed" in str(e) or "Requested format is not available" in str(e):
-            print(f"⚠️  Standard download failed. Trying fallback format...")
+            print(f"[WARN] Standard download failed. Trying fallback format...")
             # Fallback: download best available without audio extraction
             ydl_opts_fallback = {
                 "format": "best",
@@ -66,19 +66,19 @@ def download_youtube_audio(
                 
             try:
                 with yt_dlp.YoutubeDL(ydl_opts_fallback) as ydl:
-                    info = ydl.extract_info(url, download=True)
-                    filename = ydl.prepare_filename(info).replace(".webm", ".wav").replace(".m4a", ".wav").replace(".mp4", ".wav")
+                     info = ydl.extract_info(url, download=True)
+                     filename = ydl.prepare_filename(info).replace(".webm", ".wav").replace(".m4a", ".wav").replace(".mp4", ".wav")
                 return filename
             except Exception as fallback_error:
-                print(f"❌ Both download attempts failed:")
+                print(f"[ERROR] Both download attempts failed:")
                 print(f"   Original error: {e}")
                 print(f"   Fallback error: {fallback_error}")
                 raise
         else:
-            print(f"❌ Download failed: {e}")
+            print(f"[ERROR] Download failed: {e}")
             raise
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"[ERROR] Unexpected error: {e}")
         raise
 
 
