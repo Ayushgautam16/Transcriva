@@ -55,7 +55,7 @@ Transcriva AI is a state-of-the-art, private meeting intelligence dashboard. It 
 4. **Run the Application**:
    To prevent encoding errors on Windows terminal console logs, start the app with:
    ```bash
-   python -X utf8 -m streamlit run app.py
+   .venv/Scripts/python.exe -X utf8 -m streamlit run app.py
    ```
    Access the web dashboard in your browser at `http://localhost:8501`.
 
