@@ -1,1 +1,7 @@
 .env
+vector_db/
+downloads/
+downloades/
+.venv/
+__pycache__/
+*.pyc
