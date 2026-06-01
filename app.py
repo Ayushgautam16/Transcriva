@@ -25,20 +25,20 @@ st.markdown("""
 
 /* ── Root Variables ── */
 :root {
-    --bg: #03030c;
-    --surface: rgba(17, 17, 26, 0.7);
-    --surface-2: rgba(25, 25, 38, 0.55);
-    --border: rgba(124, 58, 237, 0.15);
-    --border-hover: rgba(124, 58, 237, 0.35);
-    --accent: #7c3aed;
-    --accent-glow: rgba(124, 58, 237, 0.4);
-    --accent-glow-strong: rgba(124, 58, 237, 0.75);
-    --accent-2: #06b6d4;
-    --text: #f3f4f6;
-    --text-muted: #9ca3af;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
+    --bg: #fdfcf7; /* Warm bright cream/yellowish */
+    --surface: rgba(255, 255, 255, 0.85); /* White with opacity for glassmorphism light look */
+    --surface-2: #faf8f0;
+    --border: rgba(217, 119, 6, 0.18); /* Soft amber border */
+    --border-hover: rgba(217, 119, 6, 0.4);
+    --accent: #d97706; /* Vibrant amber-gold */
+    --accent-glow: rgba(217, 119, 6, 0.25);
+    --accent-glow-strong: rgba(217, 119, 6, 0.6);
+    --accent-2: #059669; /* Emerald green */
+    --text: #29251c; /* Deep warm charcoal for high contrast readability */
+    --text-muted: #78716c; /* Soft warm grey */
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
 }
 
 /* ── Global Reset ── */
@@ -49,7 +49,7 @@ html, body, [class*="css"] {
 }
 
 .stApp {
-    background: radial-gradient(circle at 50% 0%, #160d32 0%, var(--bg) 80%) !important;
+    background: radial-gradient(circle at 50% 0%, #fefcf0 0%, var(--bg) 80%) !important;
 }
 
 /* Animated grid background */
@@ -59,8 +59,8 @@ html, body, [class*="css"] {
     top: 0; left: 0;
     width: 100%; height: 100%;
     background-image:
-        linear-gradient(rgba(124, 58, 237, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(124, 58, 237, 0.02) 1px, transparent 1px);
+        linear-gradient(rgba(217, 119, 6, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(217, 119, 6, 0.015) 1px, transparent 1px);
     background-size: 40px 40px;
     pointer-events: none;
     z-index: 0;
@@ -68,7 +68,7 @@ html, body, [class*="css"] {
 
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {
-    background-color: #06060c !important;
+    background-color: #f7f5eb !important; /* Brighter sidebar */
     border-right: 1px solid var(--border) !important;
 }
 
@@ -90,11 +90,11 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 800;
     line-height: 1.1;
     margin: 0;
-    background: linear-gradient(135deg, #ffffff 0%, #a78bfa 50%, var(--accent-2) 100%);
+    background: linear-gradient(135deg, #1e1b13 0%, #b45309 60%, var(--accent) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-shadow: 0 0 40px rgba(124, 58, 237, 0.15);
+    text-shadow: 0 0 40px rgba(217, 119, 6, 0.08);
 }
 
 .hero-sub {
@@ -117,12 +117,13 @@ h1, h2, h3, h4, h5, h6 {
     position: relative;
     overflow: hidden;
     backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px rgba(217, 119, 6, 0.04);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card:hover {
     border-color: var(--accent);
-    box-shadow: 0 8px 30px rgba(124, 58, 237, 0.15);
+    box-shadow: 0 8px 30px rgba(217, 119, 6, 0.12);
     transform: translateY(-2px);
 }
 
@@ -140,7 +141,7 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: #7c725a;
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
@@ -166,25 +167,25 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Metric Cards ── */
 .metric-card {
-    background: rgba(13, 13, 23, 0.45);
+    background: rgba(255, 255, 255, 0.9);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 1.2rem;
     text-align: center;
-    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(217, 119, 6, 0.03);
     transition: all 0.3s ease;
 }
 
 .metric-card:hover {
-    border-color: var(--accent-2);
-    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.1);
+    border-color: var(--accent);
+    box-shadow: 0 6px 20px rgba(217, 119, 6, 0.08);
 }
 
 .metric-value {
     font-family: 'Outfit', sans-serif;
     font-size: 1.4rem;
     font-weight: 700;
-    color: white;
+    color: #1e1b13;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -193,7 +194,7 @@ h1, h2, h3, h4, h5, h6 {
 .metric-label {
     font-family: 'Inter', sans-serif;
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: #7c725a;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-top: 0.3rem;
@@ -210,15 +211,15 @@ h1, h2, h3, h4, h5, h6 {
     text-transform: uppercase;
 }
 
-.badge-purple { background: rgba(124,58,237,0.15); color: #c084fc; border: 1px solid rgba(124,58,237,0.3); }
-.badge-cyan   { background: rgba(6,182,212,0.12); color: #22d3ee;    border: 1px solid rgba(6,182,212,0.25); }
-.badge-green  { background: rgba(16,185,129,0.12); color: #34d399;    border: 1px solid rgba(16,185,129,0.25); }
+.badge-purple { background: rgba(217,119,6,0.1); color: #b45309; border: 1px solid rgba(217,119,6,0.25); }
+.badge-cyan   { background: rgba(5,150,105,0.08); color: #047857; border: 1px solid rgba(5,150,105,0.2); }
+.badge-green  { background: rgba(5,150,105,0.08); color: #047857; border: 1px solid rgba(5,150,105,0.2); }
 
 /* ── Input & Buttons ── */
 .stTextInput > div > div > input,
 .stSelectbox > div > div {
-    background: var(--surface-2) !important;
-    border: 1px solid var(--border) !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(217, 119, 6, 0.25) !important;
     border-radius: 10px !important;
     color: var(--text) !important;
     font-family: 'Inter', sans-serif !important;
@@ -227,13 +228,13 @@ h1, h2, h3, h4, h5, h6 {
 
 .stTextInput > div > div > input:focus {
     border-color: var(--accent) !important;
-    box-shadow: 0 0 0 2px rgba(124,58,237,0.25) !important;
+    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2) !important;
 }
 
 .stButton > button {
-    background: linear-gradient(135deg, var(--accent), #5b21b6) !important;
+    background: linear-gradient(135deg, #d97706, #b45309) !important; /* Rich amber gradient */
     color: white !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
     border-radius: 10px !important;
     font-family: 'Outfit', sans-serif !important;
     font-weight: 600 !important;
@@ -242,14 +243,14 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0.6rem 1.5rem !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     text-transform: uppercase !important;
-    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.2) !important;
+    box-shadow: 0 4px 15px rgba(217, 119, 6, 0.25) !important;
     width: 100%;
 }
 
 .stButton > button:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.45) !important;
-    border-color: var(--accent-glow) !important;
+    box-shadow: 0 8px 25px rgba(217, 119, 6, 0.4) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
 .stButton > button:active {
@@ -257,31 +258,32 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .stButton > button[kind="secondary"] {
-    background: rgba(255, 255, 255, 0.05) !important;
+    background: rgba(0, 0, 0, 0.04) !important;
     color: var(--text) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
     box-shadow: none !important;
 }
 
 .stButton > button[kind="secondary"]:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border-color: rgba(255, 255, 255, 0.2) !important;
+    background: rgba(0, 0, 0, 0.08) !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
 }
 
 /* ── Tabs Overrides ── */
 div[data-testid="stTabBar"] {
-    background: rgba(13, 13, 23, 0.4);
-    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(217, 119, 6, 0.18);
     border-radius: 12px;
     padding: 0.3rem;
     backdrop-filter: blur(10px);
     margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.03);
 }
 
 button[data-baseweb="tab"] {
     background: transparent !important;
     border: none !important;
-    color: var(--text-muted) !important;
+    color: #7c725a !important;
     font-family: 'Outfit', sans-serif !important;
     font-weight: 600 !important;
     font-size: 0.95rem !important;
@@ -291,14 +293,14 @@ button[data-baseweb="tab"] {
 }
 
 button[data-baseweb="tab"]:hover {
-    color: var(--text) !important;
-    background: rgba(255, 255, 255, 0.04) !important;
+    color: #1e1b13 !important;
+    background: rgba(217, 119, 6, 0.05) !important;
 }
 
 button[data-baseweb="tab"][aria-selected="true"] {
     color: white !important;
-    background: linear-gradient(135deg, var(--accent), #5b21b6) !important;
-    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3) !important;
+    background: linear-gradient(135deg, #d97706, #b45309) !important;
+    box-shadow: 0 4px 15px rgba(217, 119, 6, 0.25) !important;
 }
 
 div[data-baseweb="tab-highlight-line"] {
@@ -343,10 +345,10 @@ div[data-baseweb="tab-highlight-line"] {
     font-size: 0.7rem;
     font-weight: 700;
     z-index: 2;
-    background: #0f0f18;
+    background: #ffffff;
     border: 2px solid var(--border);
     transition: all 0.3s ease;
-    color: var(--text-muted);
+    color: #7c725a;
 }
 
 .timeline-item.active .timeline-badge {
@@ -371,7 +373,7 @@ div[data-baseweb="tab-highlight-line"] {
 }
 
 .timeline-item.active .timeline-content {
-    color: white;
+    color: var(--text);
     font-weight: 600;
 }
 
@@ -386,8 +388,8 @@ div[data-baseweb="tab-highlight-line"] {
 
 /* ── Transcript Box ── */
 .transcript-box {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
+    background: #fdfbf7;
+    border: 1px solid rgba(217, 119, 6, 0.15);
     border-radius: 10px;
     padding: 1.5rem;
     font-family: 'Inter', sans-serif;
@@ -395,7 +397,7 @@ div[data-baseweb="tab-highlight-line"] {
     line-height: 1.8;
     max-height: 450px;
     overflow-y: auto;
-    color: var(--text);
+    color: #29251c;
     white-space: pre-wrap;
     word-break: break-word;
     margin-bottom: 1rem;
@@ -403,8 +405,8 @@ div[data-baseweb="tab-highlight-line"] {
 
 /* ── Chat Messages ── */
 [data-testid="stChatMessage"] {
-    background: rgba(13, 13, 23, 0.45) !important;
-    border: 1px solid var(--border) !important;
+    background: rgba(255, 255, 255, 0.7) !important;
+    border: 1px solid rgba(217, 119, 6, 0.12) !important;
     border-radius: 14px !important;
     padding: 1rem !important;
     margin-bottom: 0.75rem !important;
@@ -413,12 +415,12 @@ div[data-baseweb="tab-highlight-line"] {
 
 [data-testid="stChatMessage"]:hover {
     border-color: var(--border-hover) !important;
-    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.08);
+    box-shadow: 0 4px 20px rgba(217, 119, 6, 0.05);
 }
 
 [data-testid="stChatMessage"][data-test-role="user"] {
-    background: rgba(124, 58, 237, 0.08) !important;
-    border: 1px solid rgba(124, 58, 237, 0.22) !important;
+    background: rgba(217, 119, 6, 0.06) !important;
+    border: 1px solid rgba(217, 119, 6, 0.18) !important;
 }
 
 [data-testid="stChatMessage"] p {
@@ -433,17 +435,17 @@ div[data-baseweb="tab-highlight-line"] {
 }
 
 [data-testid="stChatInput"] textarea {
-    background-color: rgba(13, 13, 23, 0.8) !important;
-    border: 1px solid var(--border) !important;
+    background-color: #ffffff !important;
+    border: 1px solid rgba(217, 119, 6, 0.25) !important;
     border-radius: 10px !important;
     color: var(--text) !important;
     font-family: 'Inter', sans-serif !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    box-shadow: 0 4px 15px rgba(217, 119, 6, 0.05) !important;
 }
 
 [data-testid="stChatInput"] textarea:focus {
     border-color: var(--accent) !important;
-    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.25) !important;
+    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.15) !important;
 }
 
 /* ── Stale Elements ── */
@@ -697,7 +699,7 @@ if st.session_state.result:
     st.markdown(f"""
     <div class="card">
         <div class="card-title">📌 Session Title</div>
-        <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;font-weight:700;color:white">
+        <div style="font-family:'Outfit',sans-serif;font-size:1.5rem;font-weight:700;color:var(--text)">
             {r['title']}
         </div>
     </div>""", unsafe_allow_html=True)
