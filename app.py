@@ -550,6 +550,45 @@ with st.sidebar:
 
     language = st.selectbox("Language", ["english", "hinglish"], index=0)
 
+    whisper_model = "small"
+    if language == "english":
+        whisper_model = st.selectbox(
+            "Whisper Model Size",
+            ["tiny", "base", "small", "medium"],
+            index=2,
+            format_func=lambda x: {
+                "tiny": "🚀 Tiny (Fastest)",
+                "base": "⚡ Base (Fast)",
+                "small": "⚖️ Small (Balanced)",
+                "medium": "🎯 Medium (Accurate)"
+            }[x],
+            help="Choose Tiny or Base for much faster transcription on CPU."
+        )
+
+    with st.expander("🔑 API Keys", expanded=False):
+        user_mistral_key = st.text_input(
+            "Mistral API Key",
+            value=os.getenv("MISTRAL_API_KEY", ""),
+            type="password",
+            help="Required for RAG Chat and Summarization."
+        )
+        user_sarvam_key = st.text_input(
+            "Sarvam API Key",
+            value=os.getenv("SARVAM_API_KEY", ""),
+            type="password",
+            help="Required for Hinglish transcription."
+        )
+        if user_mistral_key:
+            os.environ["MISTRAL_API_KEY"] = user_mistral_key
+        if user_sarvam_key:
+            os.environ["SARVAM_API_KEY"] = user_sarvam_key
+
+    # Warnings for missing keys
+    if language == "hinglish" and not os.getenv("SARVAM_API_KEY"):
+        st.warning("⚠️ Sarvam API Key is required for Hinglish. Enter it in '🔑 API Keys' above.")
+    if not os.getenv("MISTRAL_API_KEY"):
+        st.warning("⚠️ Mistral API Key is required for Chat/Summary. Enter it in '🔑 API Keys' above.")
+
     with st.expander("YouTube Advanced Access", expanded=False):
         youtube_cookies_file = st.text_input(
             "Cookies file path",
@@ -605,7 +644,7 @@ if run_btn:
             update_step("audio", "done")
 
             update_step("transcript", "active")
-            transcript = transcribe_all(chunks, language)
+            transcript = transcribe_all(chunks, language, whisper_model=whisper_model)
             update_step("transcript", "done")
 
             update_step("title", "active")
