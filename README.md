@@ -1,106 +1,69 @@
-# Transcriva: An AI Summarizer (AI Video Assistant)
+# Transcriva AI 🎬
 
-Transcriva is a powerful, AI-driven application designed to process video and audio meetings or presentations, transcribe the content, and generate insightful summaries. Built with Streamlit, LangChain, and state-of-the-art AI models, this tool offers a seamless way to extract value from your video content.
+Transcriva AI is a state-of-the-art, private meeting intelligence dashboard. It processes video and audio meetings, transcribes content locally, extracts structured summaries, and provides an interactive Retrieval-Augmented Generation (RAG) chat assistant to query your meeting transcripts.
 
-![Transcriva Banner](https://img.shields.io/badge/Status-Active-success) ![Python Version](https://img.shields.io/badge/Python-3.10%2B-blue)
+![Status](https://img.shields.io/badge/Status-Active-success) ![Python](https://img.shields.io/badge/Python-3.10%2B-blue) ![License](https://img.shields.io/badge/License-MIT-green)
+
+---
 
 ## ✨ Features
 
-- **🎬 Video/Audio Acquisition**: Easily download audio from YouTube URLs or process local audio/video files.
-- **📝 High-Quality Transcription**: Convert spoken audio into text using local OpenAI Whisper.
-- **🌐 Bilingual Support**: Process content in English or Hinglish (Hindi + English) with built-in translation via Deep Translator.
-- **🧠 Smart Summarization**: Generate concise summaries of lengthy meetings or videos powered by Mistral AI via LangChain.
-- **🔍 Actionable Insights**: Automatically identify and extract Action Items, Key Decisions, and Open Questions.
-- **💬 RAG Chat Engine**: Chat directly with your meeting transcripts using a Retrieval-Augmented Generation (RAG) system built with ChromaDB and HuggingFace embeddings.
-- **🎨 Sleek UI**: A beautiful, responsive, and animated user interface built using Streamlit with custom CSS.
+- **📊 Tabbed Dashboard**: Streamlined interface containing Overview, Key Insights, Full Transcript, and Chat Assistant.
+- **📁 Multi-Source Input**: Supports YouTube video links, local files, and direct drag-and-drop audio/video uploads (`.mp3, .wav, .m4a, .mp4`).
+- **🚀 Whisper Speed Controls**: Choose local Whisper model sizes (`Tiny`, `Base`, `Small`, `Medium`) to speed up CPU transcription by up to 10x.
+- **🌐 Bilingual Transcribe**: Full support for English (via local Whisper) and Hinglish (Hindi + English via Sarvam AI API).
+- **📋 Structured Insights**: Instantly extracts Meeting Title, Executive Summary, Action Items, Key Decisions, and Open Questions.
+- **💬 Chat with Meeting**: Styled RAG chat workspace using Streamlit's native chat widgets, powered by Mistral AI, ChromaDB, and HuggingFace.
+- **🔑 UI Credentials Manager**: Input and manage your API keys directly from the sidebar.
 
-## 🛠️ Tech Stack
+---
 
-- **Frontend**: Streamlit
-- **Audio Processing**: `yt-dlp`, `pydub`, `ffmpeg-python`
-- **Speech-to-Text**: `openai-whisper` (running locally via PyTorch)
-- **Translation**: `deep-translator`
-- **LLM Orchestration**: LangChain (`langchain-mistralai`)
-- **Vector Store & Embeddings**: ChromaDB, `sentence-transformers`, `huggingface-hub`
-- **Environment Management**: `python-dotenv`
+## 🛠️ Prerequisites
 
-## ⚙️ Prerequisites
+- **Python 3.10 to 3.14+**
+- **FFmpeg** (installed on your system and added to your system `PATH`)
 
-- **Python**: Version 3.10 or higher.
-- **FFmpeg**: Must be installed on your system and available in your system's PATH.
-- **API Keys**: A Mistral API key (or a suitable LLM configured) is required for the summarization and RAG chat features.
+---
 
-## 🚀 Installation
+## 🚀 Quick Start
 
-1. **Clone the repository**:
+1. **Clone the Repository**:
    ```bash
    git clone https://github.com/Ayushgautam16/Transcriva-An-AI-Summarizer.git
-   cd Transcriva-An-AI-Summarizer/AI-Video-Assistant-
+   cd Transcriva-An-AI-Summarizer
    ```
 
-2. **Create a virtual environment** (Optional but highly recommended):
+2. **Install Dependencies**:
+   Using `uv` (recommended):
    ```bash
-   python -m venv venv
-   # On Windows:
-   venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
+   uv pip install -r Requirements.txt
+   uv pip install audioop-lts langchain-chroma
    ```
-
-3. **Install the dependencies**:
+   Or using standard `pip`:
    ```bash
    pip install -r Requirements.txt
+   pip install audioop-lts langchain-chroma
    ```
 
-4. **Set up environment variables**:
-   Create a `.env` file in the `AI-Video-Assistant-` directory and add your API keys:
+3. **Set Up Environment Variables** (Optional, can also be entered in the UI):
+   Create a `.env` file in the root directory:
    ```env
-   MISTRAL_API_KEY=your_mistral_api_key_here
-   # Add any other required environment variables based on the exact core setup
+   MISTRAL_API_KEY=your_mistral_api_key
+   SARVAM_API_KEY=your_sarvam_api_key
    ```
 
-## 🎮 Usage
-
-1. **Run the Streamlit application**:
+4. **Run the Application**:
+   To prevent encoding errors on Windows terminal console logs, start the app with:
    ```bash
-   streamlit run app.py
+   python -X utf8 -m streamlit run app.py
    ```
+   Access the web dashboard in your browser at `http://localhost:8501`.
 
-2. **Using the Application**:
-   - **Input**: Paste a YouTube URL or provide a local file path (e.g., `C:/path/to/video.mp4`) in the sidebar.
-   - **Language**: Select the spoken language (English or Hinglish).
-   - **Analyze**: Click the "⚡ Analyse" button to trigger the processing pipeline.
-   - **View Results**: Once completed, view the generated Title, Summary, Full Transcript, Action Items, Key Decisions, and Open Questions.
-   - **Chat**: Scroll down to the "💬 Chat with your Meeting" section to ask specific questions about the processed content.
+---
 
 ## 📂 Project Structure
-- `app.py`: The main Streamlit entry point.
-- `core/`: Contains core business logic modules for transcription, summarization, extraction, and RAG.
-- `utils/`: Utility functions for downloading and audio processing.
-- `Requirements.txt`: Project dependencies and libraries.
 
-## 🚀 Deployment
-
-Because this application uses **Streamlit** (which requires WebSockets) and heavy Machine Learning libraries like **PyTorch** and **Whisper** alongside system-level dependencies like **FFmpeg**, it is **not suitable for Vercel** (which is designed for lightweight, serverless functions with strict size and timeout limits).
-
-Here are the recommended platforms to host this application:
-
-### 1. Hugging Face Spaces (Recommended)
-Hugging Face Spaces natively supports Streamlit and AI models.
-1. Create a new Space on [Hugging Face](https://huggingface.co/spaces) and select **Streamlit** as the SDK.
-2. Upload your files (`app.py`, `Requirements.txt`, `core/`, `utils/`).
-3. Add a `packages.txt` file in the root containing `ffmpeg` (this tells the server to install FFmpeg).
-4. Add your `MISTRAL_API_KEY` in the Space's **Settings > Variables and secrets**.
-
-### 2. Streamlit Community Cloud
-1. Push your code to a public GitHub repository.
-2. Go to [Streamlit Community Cloud](https://share.streamlit.io/) and click **New app**.
-3. Select your repository, branch, and set the main file path to `AI-Video-Assistant-/app.py`.
-4. Ensure you have the `packages.txt` file containing `ffmpeg` in the same directory.
-5. Add your `MISTRAL_API_KEY` in the App's **Advanced Settings > Secrets**.
-
-### 3. Render or Railway
-For full control, you can host this using a `Dockerfile` on Render or Railway, which allows you to install OS-level dependencies (FFmpeg) and run the Streamlit server seamlessly.
-
-## 📄 License
-This project is open-sourced under the MIT License.
+- `app.py`: The main Streamlit dashboard app and custom styles.
+- `core/`: Core AI logic modules (`transcriber.py`, `summarizer.py`, `extractor.py`, `rag_engine.py`, `vector_store.py`).
+- `utils/`: Audio downloading, slicing, and conversion utils (`audio_processor.py`).
+- `Requirements.txt`: Project dependencies list.
