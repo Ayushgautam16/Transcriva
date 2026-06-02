@@ -51,7 +51,6 @@ Transcriva AI is a state-of-the-art, private meeting intelligence dashboard. It 
    MISTRAL_API_KEY=your_mistral_api_key
    SARVAM_API_KEY=your_sarvam_api_key
    ```
-
 4. **Run the Application**:
    To prevent encoding errors on Windows terminal console logs, start the app with:
    ```bash
