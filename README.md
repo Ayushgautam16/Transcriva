@@ -56,7 +56,7 @@ Transcriva AI is a state-of-the-art, private meeting intelligence dashboard. It 
    ```bash
    .venv/Scripts/python.exe -X utf8 -m streamlit run app.py
    ```
-   Access the web dashboard in your browser at `http://localhost:8501`.
+   you can Access the web dashboard in your browser at `http://localhost:8501`.
 
 ---
 
