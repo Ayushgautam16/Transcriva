@@ -58,7 +58,7 @@ Transcriva AI is a state-of-the-art, private meeting intelligence dashboard. It 
    ```
    you can Access the web dashboard in your browser at `http://localhost:8501`.
 
----
+-----
 
 ## 📂 Project Structure
 
