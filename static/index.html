@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcriva AI - Meeting Intelligence</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <span class="logo-icon">🎬</span>
+                <div class="logo-text">
+                    <h1>Transcriva</h1>
+                    <p class="logo-tagline">Meeting Intelligence</p>
+                </div>
+            </div>
+            
+            <hr class="divider">
+
+            <!-- Configuration Section -->
+            <div class="section-title">
+                <span class="badge badge-purple">Input Source</span>
+            </div>
+
+            <div class="radio-group">
+                <label class="radio-label">
+                    <input type="radio" name="inputMethod" value="youtube" checked>
+                    <span>YouTube URL</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="inputMethod" value="upload">
+                    <span>Upload Audio/Video</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="inputMethod" value="local">
+                    <span>Local File Path</span>
+                </label>
+            </div>
+
+            <!-- Conditional Inputs -->
+            <div id="youtubeInputGroup" class="input-group">
+                <label for="youtubeUrl">YouTube Video URL</label>
+                <input type="text" id="youtubeUrl" placeholder="https://youtube.com/watch?v=...">
+            </div>
+
+            <div id="uploadInputGroup" class="input-group hidden">
+                <label for="audioFile">Choose Audio/Video File</label>
+                <div class="file-drop-zone">
+                    <input type="file" id="audioFile" accept=".mp3,.wav,.m4a,.mp4">
+                    <div class="drop-zone-text">
+                        <span>📁</span>
+                        <p>Click or drag file here</p>
+                        <small>MP3, WAV, M4A, MP4</small>
+                    </div>
+                </div>
+                <div id="uploadProgressContainer" class="progress-container hidden">
+                    <div class="progress-bar-wrapper">
+                        <div id="uploadProgressBar" class="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <span id="uploadStatusText">Uploading: 0%</span>
+                </div>
+                <div id="uploadSuccessMsg" class="success-msg hidden"></div>
+            </div>
+
+            <div id="localInputGroup" class="input-group hidden">
+                <label for="localPath">Local File Path</label>
+                <input type="text" id="localPath" placeholder="C:\path\to\file.mp3">
+            </div>
+
+            <div class="input-group">
+                <label for="languageSelect">Language</label>
+                <select id="languageSelect">
+                    <option value="english">English</option>
+                    <option value="hinglish">Hinglish</option>
+                </select>
+            </div>
+
+            <div id="whisperModelGroup" class="input-group">
+                <label for="whisperModelSelect">Whisper Model Size</label>
+                <select id="whisperModelSelect">
+                    <option value="tiny">🚀 Tiny (Fastest)</option>
+                    <option value="base">⚡ Base (Fast)</option>
+                    <option value="small" selected>⚖️ Small (Balanced)</option>
+                    <option value="medium">🎯 Medium (Accurate)</option>
+                </select>
+            </div>
+
+            <!-- API Keys Section -->
+            <details class="api-keys-details">
+                <summary>🔑 API Keys</summary>
+                <div class="api-keys-content">
+                    <div class="input-group">
+                        <label for="mistralKey">Mistral API Key</label>
+                        <input type="password" id="mistralKey" placeholder="Mistral API Key (from env if empty)">
+                    </div>
+                    <div class="input-group">
+                        <label for="sarvamKey">Sarvam API Key</label>
+                        <input type="password" id="sarvamKey" placeholder="Sarvam API Key (from env if empty)">
+                    </div>
+                </div>
+            </details>
+
+            <!-- YouTube Advanced Access Section -->
+            <details class="advanced-details">
+                <summary>YouTube Advanced Access</summary>
+                <div class="advanced-content">
+                    <div class="input-group">
+                        <label for="cookiesFile">Cookies File Path</label>
+                        <input type="text" id="cookiesFile" placeholder="C:\path\to\cookies.txt">
+                    </div>
+                    <div class="input-group">
+                        <label for="cookiesBrowser">Browser Cookies Source</label>
+                        <select id="cookiesBrowser">
+                            <option value="">None</option>
+                            <option value="chrome">Chrome</option>
+                            <option value="edge">Edge</option>
+                            <option value="firefox">Firefox</option>
+                            <option value="brave">Brave</option>
+                        </select>
+                    </div>
+                </div>
+            </details>
+
+            <button id="analyzeBtn" class="primary-btn">⚡ Analyse</button>
+
+            <hr class="divider">
+
+            <!-- Pipeline Status Timeline -->
+            <div class="section-title">
+                <span class="badge badge-cyan">Pipeline Status</span>
+            </div>
+            
+            <div class="timeline-container">
+                <div class="timeline-item" id="step-audio">
+                    <div class="timeline-badge">○</div>
+                    <div class="timeline-content">🔊 Audio Processing</div>
+                </div>
+                <div class="timeline-item" id="step-transcript">
+                    <div class="timeline-badge">○</div>
+                    <div class="timeline-content">📝 Transcription</div>
+                </div>
+                <div class="timeline-item" id="step-title">
+                    <div class="timeline-badge">○</div>
+                    <div class="timeline-content">🏷️ Title Generation</div>
+                </div>
+                <div class="timeline-item" id="step-summary">
+                    <div class="timeline-badge">○</div>
+                    <div class="timeline-content">📋 Summarisation</div>
+                </div>
+                <div class="timeline-item" id="step-extract">
+                    <div class="timeline-badge">○</div>
+                    <div class="timeline-content">🔍 Extraction</div>
+                </div>
+                <div class="timeline-item" id="step-rag">
+                    <div class="timeline-badge">○</div>
+                    <div class="timeline-content">🧠 RAG Engine</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="main-header">
+                <h2 class="main-title">Transcriva AI</h2>
+                <p class="main-subtitle">Transcribe · Summarise · Chat with your meetings</p>
+            </header>
+
+            <hr class="divider">
+
+            <!-- Notification Messages -->
+            <div id="notificationArea" class="notification-area hidden"></div>
+
+            <!-- Empty State Landing Page -->
+            <section id="emptyState" class="empty-state">
+                <div class="empty-state-card">
+                    <div class="empty-state-icon">🎬</div>
+                    <h3 class="hero-text">Ready to Transcribe</h3>
+                    <p class="hero-description">
+                        Provide a YouTube video link, drag and drop an audio/video file, or specify a path in the sidebar. We'll handle transcription, summarization, and let you chat with the contents.
+                    </p>
+                    <div class="badge-row">
+                        <span class="badge badge-purple">🔊 Transcription</span>
+                        <span class="badge badge-cyan">📋 Summarisation</span>
+                        <span class="badge badge-green">🧠 RAG Chat</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loading State -->
+            <section id="loadingState" class="loading-state hidden">
+                <div class="loading-card">
+                    <div class="spinner"></div>
+                    <h3>Processing Pipeline is running...</h3>
+                    <p>See the sidebar timeline for real-time status and logs.</p>
+                </div>
+            </section>
+
+            <!-- Results Panel (Visible after completion) -->
+            <section id="resultsPanel" class="results-panel hidden">
+                <!-- Title Card -->
+                <div class="card title-card">
+                    <div class="card-title">📌 Session Title</div>
+                    <div id="resultSessionTitle" class="session-title-text">Meeting Title</div>
+                </div>
+
+                <!-- Tab Headers -->
+                <nav class="tab-bar">
+                    <button class="tab-btn active" data-tab="tab-overview">📊 Overview</button>
+                    <button class="tab-btn" data-tab="tab-insights">🎯 Key Insights</button>
+                    <button class="tab-btn" data-tab="tab-transcript">📝 Full Transcript</button>
+                    <button class="tab-btn" data-tab="tab-chat">💬 Chat Assistant</button>
+                </nav>
+
+                <!-- Tab Content: Overview -->
+                <div class="tab-content active" id="tab-overview">
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div id="metricSource" class="metric-value">YouTube URL</div>
+                            <div class="metric-label">Source</div>
+                        </div>
+                        <div class="metric-card">
+                            <div id="metricLanguage" class="metric-value">English</div>
+                            <div class="metric-label">Language</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value text-success">✅ Complete</div>
+                            <div class="metric-label">Status</div>
+                        </div>
+                    </div>
+
+                    <div class="overview-split">
+                        <div class="summary-section">
+                            <h3>📋 Executive Summary</h3>
+                            <div class="card scrollable-card">
+                                <div id="summaryContent" class="card-content markdown-body">
+                                    Summary content goes here.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="media-section">
+                            <h3>📺 Media Reference</h3>
+                            <div id="mediaPlayerContainer" class="media-player-container">
+                                <!-- Media player inserted dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Insights -->
+                <div class="tab-content" id="tab-insights">
+                    <div class="insights-grid">
+                        <div class="card">
+                            <div class="card-title text-success">✅ Action Items</div>
+                            <div id="actionItemsContent" class="card-content markdown-body"></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title text-cyan">🔑 Key Decisions</div>
+                            <div id="keyDecisionsContent" class="card-content markdown-body"></div>
+                        </div>
+                    </div>
+                    <div class="card open-questions-card">
+                        <div class="card-title text-purple">❓ Open Questions</div>
+                        <div id="openQuestionsContent" class="card-content markdown-body"></div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Full Transcript -->
+                <div class="tab-content" id="tab-transcript">
+                    <h3>📝 Full Transcript</h3>
+                    <div class="transcript-box" id="transcriptBox"></div>
+                    <button id="downloadTranscriptBtn" class="secondary-btn">📥 Download Transcript as TXT</button>
+                </div>
+
+                <!-- Tab Content: Chat -->
+                <div class="tab-content" id="tab-chat">
+                    <h3>💬 Chat with your Meeting</h3>
+                    <p class="tab-desc">Ask specific details, clarify statements, or query numbers directly from the transcript using natural language.</p>
+                    <hr class="divider">
+
+                    <div class="chat-container">
+                        <div class="chat-history" id="chatHistory">
+                            <!-- Chat messages rendered dynamically -->
+                        </div>
+                        
+                        <form id="chatForm" class="chat-form">
+                            <input type="text" id="chatInput" placeholder="Ask something about the meeting..." required>
+                            <button type="submit" class="chat-submit-btn">Send</button>
+                        </form>
+
+                        <div class="chat-actions">
+                            <button id="clearChatBtn" class="clear-chat-btn">🗑️ Clear Chat History</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="/static/main.js"></script>
+</body>
+</html>
