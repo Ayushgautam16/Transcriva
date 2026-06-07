@@ -22,7 +22,6 @@ def run_pipeline(
         youtube_cookies_file=youtube_cookies_file,
         youtube_cookies_browser=youtube_cookies_browser,
     )
-
     transcript = transcribe_all(chunks,language)
     print(f"raw transcription (first 300 characters ) {transcript[:300]}")
 
