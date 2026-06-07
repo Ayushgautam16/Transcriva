@@ -88,3 +88,133 @@ Now powered by a high-performance **FastAPI backend** and a bespoke, responsive 
 - `utils/`: Audio downloading, slicing, and conversion utilities (`audio_processor.py`).
 - `Requirements.txt`: Project backend dependencies.
 
+---
+
+## 🌐 Hosting & Deployment
+
+To run Transcriva AI continuously in a production or staging cloud environment, choose one of the options below:
+
+### Option 1: Standard Linux Server (Ubuntu/Debian VPS)
+
+You can host Transcriva AI on a VPS (DigitalOcean, AWS EC2, Linode, etc.) using **Nginx** as a reverse proxy and **systemd** to manage the background process.
+
+#### 1. Install System Dependencies
+Update system packages and install Python, git, Nginx, and FFmpeg:
+```bash
+sudo apt update
+sudo apt install -y python3-pip python3-venv git ffmpeg nginx
+```
+
+#### 2. Setup Project & Virtual Environment
+Clone the repository, create a virtual environment, and install dependencies:
+```bash
+git clone https://github.com/Ayushgautam16/Transcriva-An-AI-Summarizer.git /var/www/transcriva
+cd /var/www/transcriva
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r Requirements.txt
+pip install audioop-lts langchain-chroma fastapi uvicorn python-multipart
+```
+
+#### 3. Create systemd Service File
+Create a system service file to run the FastAPI server:
+```bash
+sudo nano /etc/systemd/system/transcriva.service
+```
+Paste the service configuration:
+```ini
+[Unit]
+Description=Transcriva AI FastAPI Server
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/var/www/transcriva
+Environment="PYTHONIOENCODING=utf-8"
+ExecStart=/var/www/transcriva/.venv/bin/uvicorn server:app --host 127.0.0.1 --port 8000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+Enable and start the service:
+```bash
+sudo systemctl enable transcriva
+sudo systemctl start transcriva
+```
+
+#### 4. Configure Nginx Reverse Proxy
+Create a new Nginx server configuration block:
+```bash
+sudo nano /etc/nginx/sites-available/transcriva
+```
+Paste the server configuration (replace `yourdomain.com` with your domain or server IP):
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Increase upload limit for large video/audio files
+        client_max_body_size 500M;
+    }
+}
+```
+Link and test Nginx configuration, then reload Nginx:
+```bash
+sudo ln -s /etc/nginx/sites-available/transcriva /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+*(Optional)* Secure your domain with SSL using Let's Encrypt Certbot:
+```bash
+sudo apt install snapd
+sudo snap install --classic certbot
+sudo ln -s /snap/bin/certbot /usr/bin/certbot
+sudo certbot --nginx -d yourdomain.com
+```
+
+---
+
+### Option 2: Containerized Deployment (Docker)
+
+If you prefer containerized deployment, create a `Dockerfile` in the root of the project:
+
+```dockerfile
+FROM python:3.11-slim
+
+# Install system dependencies (ffmpeg is required)
+RUN apt-get update && apt-get install -y ffmpeg git && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy dependency files and install
+COPY Requirements.txt .
+RUN pip install --no-cache-dir -r Requirements.txt
+RUN pip install --no-cache-dir audioop-lts langchain-chroma fastapi uvicorn python-multipart
+
+# Copy project files
+COPY . .
+
+EXPOSE 8000
+
+# Start server
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+Build and run your Docker container:
+```bash
+docker build -t transcriva-ai .
+docker run -d -p 8000:8000 \
+  -e MISTRAL_API_KEY="your_key" \
+  -e SARVAM_API_KEY="your_key" \
+  --name transcriva-app transcriva-ai
+```
+
+
