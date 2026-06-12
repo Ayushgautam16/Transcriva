@@ -56,6 +56,7 @@ def run_pipeline_thread(
         with state_lock:
             global_state["steps"][key] = state
 
+
     try:
         update_step("audio", "active")
         chunks = process_input(
@@ -130,6 +131,7 @@ async def analyze(
     language: str = Form("english"),
     whisper_model: str = Form("small"),
     source_type: str = Form("YouTube URL"),
+   
     youtube_cookies_file: str | None = Form(None),
     youtube_cookies_browser: str | None = Form(None),
     user_mistral_key: str | None = Form(None),
@@ -148,6 +150,7 @@ async def analyze(
         global_state["rag_chain"] = None
         global_state["chat_history"] = []
         global_state["source_type"] = source_type
+
         for k in global_state["steps"]:
             global_state["steps"][k] = "pending"
 
@@ -231,6 +234,7 @@ async def clear_chat():
 @app.get("/")
 async def serve_index():
     index_path = os.path.join("static", "index.html")
+    
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return HTMLResponse("<h1>Static static/index.html not found!</h1>", status_code=404)
