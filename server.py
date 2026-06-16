@@ -216,6 +216,8 @@ async def get_status():
             "steps": global_state["steps"],
             "result": global_state["result"],
             "chat_history": global_state["chat_history"],
+            "mistral_configured": bool(os.environ.get("MISTRAL_API_KEY")),
+            "sarvam_configured": bool(os.environ.get("SARVAM_API_KEY")),
         }
 
 @app.post("/api/chat")

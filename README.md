@@ -2,7 +2,7 @@
 
 Transcriva AI is a state-of-the-art, private meeting intelligence dashboard. It processes video and audio meetings, transcribes content locally, extracts structured summaries, and provides an interactive Retrieval-Augmented Generation (RAG) chat assistant to query your meeting transcripts.
 
-Now powered by a high-performance **FastAPI backend** and a bespoke, responsive **vanilla HTML/CSS/JS frontend**, the application features an asynchronous processing pipeline, live status tracking, and a gorgeous modern UI.
+Now powered by a high-performance **FastAPI backend** and a bespoke, responsive **Vite + React frontend**, the application features an asynchronous processing pipeline, live status tracking, and a gorgeous modern UI.
 
 ![Status](https://img.shields.io/badge/Status-Active-success) ![Python](https://img.shields.io/badge/Python-3.10%2B-blue) ![License](https://img.shields.io/badge/License-MIT-green)
 
@@ -76,10 +76,11 @@ Now powered by a high-performance **FastAPI backend** and a bespoke, responsive 
 ## 📂 Project Structure
 
 - `server.py`: The main FastAPI server orchestrating the background pipeline, RAG endpoints, and static file hosting.
-- `static/`: The frontend application directory.
-  - `index.html`: The HTML5 structure featuring Google Fonts and semantic layouts.
-  - `style.css`: Premium vanilla CSS stylesheet featuring dark modes, smooth transitions, and responsive grid layouts.
-  - `main.js`: Vanilla JS managing AJAX requests, drag-and-drop file upload progress, dynamic UI status updates, and interactive chat.
+- `frontend/`: The Vite + React frontend client.
+  - `src/App.jsx`: Main React component managing pipeline state, custom timeline, tabbed navigation, and interactive chat.
+  - `src/App.css` & `src/index.css`: Glassmorphic styling stylesheets.
+  - `src/main.jsx`: React rendering entry point.
+  - `vite.config.js`: Vite server and proxy configuration.
 - `core/`: Core AI logic modules:
   - `transcriber.py`: Whisper-based speech-to-text.
   - `summarizer.py`: Summarization module.
