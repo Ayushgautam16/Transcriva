@@ -250,12 +250,7 @@ async def serve_index():
     if os.path.exists(dist_index):
         return FileResponse(dist_index)
         
-    # Fallback to static directory
-    static_index = os.path.join("static", "index.html")
-    if os.path.exists(static_index):
-        return FileResponse(static_index)
-        
-    return HTMLResponse("<h1>Frontend build or static folder not found!</h1>", status_code=404)
+    return HTMLResponse("<h1>Frontend build not found!</h1>", status_code=404)
 
 # Serve video or audio files from downloads directory
 @app.get("/api/media")
@@ -269,8 +264,6 @@ dist_assets = os.path.join("frontend", "dist", "assets")
 if os.path.exists(dist_assets):
     app.mount("/assets", StaticFiles(directory=dist_assets), name="assets")
 
-# Serve fallback legacy static files (style.css, main.js, etc.)
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 if __name__ == "__main__":
     import uvicorn
