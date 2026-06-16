@@ -24,6 +24,29 @@
   --font-mono:    'JetBrains Mono', monospace;
 }
 
+/* ══════════════════════════
+   DARK MODE overrides
+══════════════════════════ */
+body.dark {
+  --warm-bg:              #0d0805;
+  --warm-surface:         #120a04;
+  --warm-card:            #1c1008;
+  --warm-border:          rgba(239, 159, 39, 0.15);
+  --warm-accent:          #EF9F27;
+  --warm-accent-light:    rgba(239,159,39,0.12);
+  --warm-amber:           #FAC775;
+  --warm-coral:           #F08060;
+  --warm-coral-light:     rgba(240,128,96,0.12);
+  --warm-text:            #F5E6C8;
+  --warm-muted:           #9C8060;
+  --warm-sidebar:         #080402;
+  --warm-sidebar-surface: #100805;
+  --warm-sidebar-border:  rgba(239,159,39,0.12);
+  --warm-sidebar-text:    #F5E6C8;
+  --warm-sidebar-muted:   #7A5C35;
+  --warm-gold-glow:       rgba(239,159,39,0.2);
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; height: 100%; }
 
@@ -34,6 +57,7 @@ body {
   height: 100vh;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 #root { height: 100%; }

@@ -50,6 +50,11 @@ export default function App() {
   const [language, setLanguage]     = useState('english');
   const [whisperModel, setWhisperModel] = useState('small');
 
+  const [isDark, setIsDark] = useState(() => {
+    try { return localStorage.getItem('transcriva-theme') === 'dark'; }
+    catch { return false; }
+  });
+
   const [mistralKey, setMistralKey]         = useState('');
   const [sarvamKey, setSarvamKey]           = useState('');
   const [mistralConfigured, setMistralConfigured] = useState(false);
@@ -60,6 +65,15 @@ export default function App() {
 
   const [apiOpen, setApiOpen] = useState(false);
   const [ytOpen,  setYtOpen]  = useState(false);
+
+  // Apply dark mode class to body
+  useEffect(() => {
+    document.body.classList.toggle('dark', isDark);
+    try { localStorage.setItem('transcriva-theme', isDark ? 'dark' : 'light'); }
+    catch {}
+  }, [isDark]);
+
+  const toggleTheme = () => setIsDark(d => !d);
 
   const [status, setStatus] = useState('idle');
   const [error,  setError]  = useState(null);
@@ -400,6 +414,14 @@ export default function App() {
         <div className="main-header">
           <div className="main-title">Transcriva AI</div>
           <div className="main-subtitle">Transcribe · Summarise · Chat with your meetings</div>
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label="Toggle theme"
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
           {status === 'completed' && result && (
             <div className="tabs-row">
               {tabs.map(t => (
