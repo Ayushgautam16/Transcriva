@@ -22,6 +22,8 @@ function App() {
   // API Keys
   const [mistralKey, setMistralKey] = useState('');
   const [sarvamKey, setSarvamKey] = useState('');
+  const [mistralConfigured, setMistralConfigured] = useState(false);
+  const [sarvamConfigured, setSarvamConfigured] = useState(false);
   
   // YouTube Advanced
   const [cookiesFile, setCookiesFile] = useState('');
@@ -68,6 +70,8 @@ function App() {
       setSteps(data.steps);
       setResult(data.result);
       setChatHistory(data.chat_history || []);
+      setMistralConfigured(data.mistral_configured || false);
+      setSarvamConfigured(data.sarvam_configured || false);
     } catch (err) {
       console.error("Failed to fetch pipeline status:", err);
     }
@@ -222,8 +226,8 @@ function App() {
   };
 
   // Check if warning keys apply
-  const isSarvamKeyMissing = language === 'hinglish' && !sarvamKey && !result;
-  const isMistralKeyMissing = !mistralKey && !result;
+  const isSarvamKeyMissing = language === 'hinglish' && !sarvamKey && !sarvamConfigured && !result;
+  const isMistralKeyMissing = !mistralKey && !mistralConfigured && !result;
 
   return (
     <div className="app-container">
@@ -363,7 +367,7 @@ function App() {
                 <span className="field-label">Mistral API Key</span>
                 <input 
                   type="password" 
-                  placeholder="Paste Mistral Key" 
+                  placeholder={mistralConfigured ? "Saved (••••••••)" : "Paste Mistral Key"} 
                   value={mistralKey} 
                   onChange={(e) => setMistralKey(e.target.value)}
                   disabled={status === 'running'}
@@ -373,7 +377,7 @@ function App() {
                 <span className="field-label">Sarvam API Key</span>
                 <input 
                   type="password" 
-                  placeholder="Paste Sarvam Key" 
+                  placeholder={sarvamConfigured ? "Saved (••••••••)" : "Paste Sarvam Key"} 
                   value={sarvamKey} 
                   onChange={(e) => setSarvamKey(e.target.value)}
                   disabled={status === 'running'}
