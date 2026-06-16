@@ -325,11 +325,7 @@
   border-radius: 50%;
   opacity: 0;
   animation: floatParticle var(--dur, 5s) ease-in-out infinite var(--delay, 0s);
-  filter: blur(1px);
-}
-/* In dark mode, particles get a glow and higher opacity */
-body.dark .particle {
-  filter: blur(0.5px) drop-shadow(0 0 6px var(--p-color, #EF9F27));
+  filter: blur(0.5px) drop-shadow(0 0 8px var(--p-color, #EF9F27));
 }
 
 /* Main Header */
