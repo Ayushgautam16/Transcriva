@@ -17,7 +17,7 @@ Now powered by a high-performance **FastAPI backend** and a bespoke, responsive 
 - **🌐 Bilingual Transcribe**: Full support for English (via local Whisper) and Hinglish (Hindi + English via Sarvam AI API).
 - **📋 Structured Insights**: Instantly extracts Meeting Title, Executive Summary, Action Items, Key Decisions, and Open Questions.
 - **💬 Chat with Meeting**: Beautifully styled RAG chat workspace using natural language queries, powered by Mistral AI, ChromaDB, and HuggingFace.
-- **🔑 UI Credentials Manager**: Input and manage your API keys and YouTube cookies directly from the sidebar.
+- **🔑 Secure Credentials Masking**: Manage API keys and YouTube cookies directly in the UI. Configured keys are checked dynamically and masked using placeholders (`Saved (••••••••)`) to prevent accidental leaks.
 
 ---
 
@@ -48,12 +48,13 @@ Now powered by a high-performance **FastAPI backend** and a bespoke, responsive 
    pip install audioop-lts langchain-chroma fastapi uvicorn python-multipart
    ```
 
-3. **Set Up Environment Variables** (Optional, can also be entered in the UI):
+3. **Set Up Environment Variables**:
    Create a `.env` file in the root directory:
    ```env
    MISTRAL_API_KEY=your_mistral_api_key
    SARVAM_API_KEY=your_sarvam_api_key
    ```
+   *Note: Keys loaded via `.env` are automatically git-ignored, read securely by the backend, and masked on the frontend dashboard using `Saved (••••••••)` to prevent exposing cleartext values.*
 
 4. **Run the Application**:
    You can easily launch the server using the pre-configured scripts:
