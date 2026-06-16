@@ -1,137 +1,62 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  /* ── Core Background ── */
-  --bg: #040410;
-  --bg-2: #07071a;
-  --surface: rgba(12, 12, 30, 0.75);
-  --surface-2: rgba(18, 18, 42, 0.6);
-  --surface-3: rgba(255,255,255,0.03);
+  --warm-bg:              #FDF6EE;
+  --warm-surface:         #FFF9F4;
+  --warm-card:            #FFFFFF;
+  --warm-border:          rgba(186, 117, 23, 0.18);
+  --warm-accent:          #BA7517;
+  --warm-accent-light:    #FAEEDA;
+  --warm-amber:           #EF9F27;
+  --warm-coral:           #D85A30;
+  --warm-coral-light:     #FAECE7;
+  --warm-text:            #2C1F0A;
+  --warm-muted:           #7A5C2E;
+  --warm-sidebar:         #1C1208;
+  --warm-sidebar-surface: #271A09;
+  --warm-sidebar-border:  rgba(239,159,39,0.15);
+  --warm-sidebar-text:    #F5E6C8;
+  --warm-sidebar-muted:   #9C8060;
+  --warm-gold-glow:       rgba(239,159,39,0.25);
 
-  /* ── Borders ── */
-  --border: rgba(120, 60, 255, 0.18);
-  --border-hover: rgba(120, 60, 255, 0.45);
-  --border-subtle: rgba(255,255,255,0.06);
-
-  /* ── Accent Palette ── */
-  --accent: #7c3aed;
-  --accent-bright: #9f5ffe;
-  --accent-hover: #6d28d9;
-  --accent-glow: rgba(124, 58, 237, 0.28);
-  --accent-glow-strong: rgba(124, 58, 237, 0.6);
-  --accent-2: #06b6d4;
-  --accent-2-glow: rgba(6,182,212,0.25);
-  --accent-3: #f472b6;
-  --accent-3-glow: rgba(244,114,182,0.2);
-
-  /* ── Text ── */
-  --text: #eef0f8;
-  --text-muted: #8890b0;
-  --text-dim: #555878;
-
-  /* ── Semantic Colors ── */
-  --success: #10b981;
-  --success-glow: rgba(16,185,129,0.25);
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --danger-glow: rgba(239,68,68,0.2);
-
-  /* ── Typography ── */
-  --font-sans: 'Inter', sans-serif;
+  --font-sans:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-heading: 'Outfit', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-
-  /* ── Radius ── */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --font-mono:    'JetBrains Mono', monospace;
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html { scroll-behavior: smooth; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; height: 100%; }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  overflow-x: hidden;
+  background: var(--warm-bg);
+  color: var(--warm-text);
+  height: 100vh;
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Scrollbars ── */
-::-webkit-scrollbar { width: 5px; height: 5px; }
+#root { height: 100%; }
+
+::selection { background: rgba(239,159,39,0.25); color: var(--warm-text); }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: rgba(124, 58, 237, 0.3);
-  border-radius: 99px;
-}
-::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+::-webkit-scrollbar-thumb { background: rgba(186,117,23,0.25); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--warm-amber); }
 
-/* ── Selection ── */
-::selection {
-  background: rgba(124,58,237,0.35);
-  color: white;
-}
-
-/* ── Global Keyframes ── */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeInLeft {
-  from { opacity: 0; transform: translateX(-12px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-@keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 8px var(--accent-glow), 0 0 20px var(--accent-glow); }
-  50%       { box-shadow: 0 0 16px var(--accent-glow-strong), 0 0 40px var(--accent-glow-strong); }
-}
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-6px); }
-}
-@keyframes orb-drift {
-  0%   { transform: translate(0,0) scale(1); }
-  33%  { transform: translate(40px,-20px) scale(1.08); }
-  66%  { transform: translate(-30px, 15px) scale(0.95); }
-  100% { transform: translate(0,0) scale(1); }
-}
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes timeline-pulse {
-  0%,100% { transform: scale(1); box-shadow: 0 0 6px var(--accent-glow); }
-  50%      { transform: scale(1.15); box-shadow: 0 0 18px var(--accent-glow-strong); }
-}
-@keyframes text-pulse {
-  0%,100% { opacity: 0.75; }
-  50%      { opacity: 1; }
-}
-@keyframes msg-in {
-  from { opacity: 0; transform: scale(0.95) translateY(4px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-@keyframes thinking-dot {
-  0%,80%,100% { transform: scale(0.6); opacity: 0.4; }
-  40%          { transform: scale(1); opacity: 1; }
-}
-@keyframes progress-shine {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
+/* Keyframes */
+@keyframes spin          { to { transform: rotate(360deg); } }
+@keyframes spin-rev      { to { transform: rotate(-360deg); } }
+@keyframes centerPulse   { 0%,100%{opacity:1;transform:translate(-50%,-50%) scale(1)} 50%{opacity:0.5;transform:translate(-50%,-50%) scale(0.65)} }
+@keyframes progressFlow  { 0%{width:20%;margin-left:0} 50%{width:50%;margin-left:10%} 100%{width:20%;margin-left:80%} }
+@keyframes stepPulse     { 0%,100%{background:rgba(239,159,39,0.08)} 50%{background:rgba(239,159,39,0.18)} }
+@keyframes cardPulse     { 0%,100%{box-shadow:0 0 0 0 rgba(239,159,39,0)} 50%{box-shadow:0 0 0 5px rgba(239,159,39,0.12)} }
+@keyframes fadeInUp      { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes floatParticle { 0%{opacity:0;transform:translateY(60px) scale(0)} 20%{opacity:0.55} 80%{opacity:0.3} 100%{opacity:0;transform:translateY(-90px) scale(1.2)} }
+@keyframes msgIn         { from{opacity:0;transform:translateY(5px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+@keyframes thinking      { 0%,80%,100%{transform:scale(0.5);opacity:0.3} 40%{transform:scale(1);opacity:1} }
+@keyframes shimmerBtn    { 0%{background-position:-200% center} 100%{background-position:200% center} }
+@keyframes idleFloat     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+@keyframes idleRing      { to{transform:rotate(360deg)} }
