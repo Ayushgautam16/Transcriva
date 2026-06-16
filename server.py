@@ -18,6 +18,16 @@ load_dotenv()
 
 app = FastAPI()
 
+# Enable CORS for React development server
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Global State
 global_state = {
     "status": "idle",       # idle, running, completed, failed
@@ -233,11 +243,17 @@ async def clear_chat():
 # Serve main index file
 @app.get("/")
 async def serve_index():
-    index_path = os.path.join("static", "index.html")
-    
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return HTMLResponse("<h1>Static static/index.html not found!</h1>", status_code=404)
+    # Serve React production build
+    dist_index = os.path.join("frontend", "dist", "index.html")
+    if os.path.exists(dist_index):
+        return FileResponse(dist_index)
+        
+    # Fallback to static directory
+    static_index = os.path.join("static", "index.html")
+    if os.path.exists(static_index):
+        return FileResponse(static_index)
+        
+    return HTMLResponse("<h1>Frontend build or static folder not found!</h1>", status_code=404)
 
 # Serve video or audio files from downloads directory
 @app.get("/api/media")
@@ -246,7 +262,12 @@ async def serve_media(path: str):
         return FileResponse(path)
     raise HTTPException(status_code=404, detail="Media file not found")
 
-# Serve other static files (style.css, main.js, icons, etc.)
+# Serve other static files (assets from Vite production build)
+dist_assets = os.path.join("frontend", "dist", "assets")
+if os.path.exists(dist_assets):
+    app.mount("/assets", StaticFiles(directory=dist_assets), name="assets")
+
+# Serve fallback legacy static files (style.css, main.js, etc.)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 if __name__ == "__main__":
