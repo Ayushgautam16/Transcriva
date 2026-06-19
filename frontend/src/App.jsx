@@ -2,9 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import {
   AlertTriangle, Loader2, Send, Trash2, Download,
   Copy, Check, UploadCloud, ChevronDown, ChevronUp,
-  MessageSquare, Zap
+  MessageSquare, Zap, ClipboardList, LogOut, User
 } from 'lucide-react';
 import './App.css';
+import LoginPage from './LoginPage';
+import ProfilePage from './ProfilePage';
+import TaskAssignModal from './TaskAssignModal';
 
 /* ── Floating particle colours ── */
 const PARTICLE_COLORS = ['#EF9F27','#D85A30','#FAC775','#BA7517','#F5C4B3','#FAEEDA'];
@@ -46,7 +49,34 @@ function stepClass(s) {
 }
 
 export default function App() {
-  /* ── State ── */
+  /* ── Auth State ── */
+  const [currentUser, setCurrentUser] = useState(() => {
+    try { const u = localStorage.getItem('transcriva_user'); return u ? JSON.parse(u) : null; }
+    catch { return null; }
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('transcriva_token') || null);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+
+  const handleLogin = (user, tok) => {
+    setCurrentUser(user);
+    setToken(tok);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {}
+    localStorage.removeItem('transcriva_token');
+    localStorage.removeItem('transcriva_user');
+    setCurrentUser(null);
+    setToken(null);
+  };
+
+  /* ── UI State ── */
   const [activeTab, setActiveTab]   = useState('overview');
   const [inputMethod, setInputMethod] = useState('YouTube URL');
   const [source, setSource]         = useState('');
@@ -71,6 +101,7 @@ export default function App() {
 
   const [apiOpen, setApiOpen] = useState(false);
   const [ytOpen,  setYtOpen]  = useState(false);
+
 
   // Apply dark mode class to body
   useEffect(() => {
@@ -219,7 +250,32 @@ export default function App() {
 
   const isAnalyzing = status === 'running';
 
+  /* ── Auth gate ── */
+  if (!currentUser || !token) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
   return (
+    <>
+      {/* Profile overlay */}
+      {showProfile && (
+        <ProfilePage
+          currentUser={currentUser}
+          token={token}
+          onClose={() => setShowProfile(false)}
+        />
+      )}
+
+      {/* Task Assign modal */}
+      {showTaskModal && result && (
+        <TaskAssignModal
+          result={result}
+          token={token}
+          currentUser={currentUser}
+          onClose={() => setShowTaskModal(false)}
+        />
+      )}
+
     <div className="app-container">
 
       {/* ═══ SIDEBAR ═══ */}
@@ -234,9 +290,24 @@ export default function App() {
               <div className="logo-sub">Meeting Intelligence</div>
             </div>
           </div>
+
+          {/* User chip */}
+          <div className="sidebar-user-chip">
+            <span className="suc-avatar">{currentUser.avatar}</span>
+            <div className="suc-info">
+              <div className="suc-name">{currentUser.display_name}</div>
+              <div className="suc-role">{currentUser.role === 'admin' ? '👑 Admin' : '👤 Member'}</div>
+            </div>
+          </div>
         </div>
 
         <div className="sidebar-body">
+
+          {/* My Tasks nav */}
+          <button className="my-tasks-btn" onClick={() => setShowProfile(true)}>
+            <ClipboardList size={14} />
+            My Tasks
+          </button>
 
           {/* Input Source */}
           <div className="sidebar-section-label">Input Source</div>
@@ -410,6 +481,11 @@ export default function App() {
             );
           })}
         </div>
+
+        {/* Logout */}
+        <button className="sidebar-logout-btn" onClick={handleLogout}>
+          <LogOut size={13} /> Sign Out
+        </button>
       </aside>
 
       {/* ═══ MAIN CONTENT ═══ */}
@@ -420,23 +496,38 @@ export default function App() {
         <div className="main-header">
           <div className="main-title">Transcriva AI</div>
           <div className="main-subtitle">Transcribe · Summarise · Chat with your meetings</div>
-          <button
-            className="theme-toggle"
-            onClick={toggleTheme}
-            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            aria-label="Toggle theme"
-          >
-            {isDark ? '☀️' : '🌙'}
-          </button>
+
+          {/* Header right controls */}
+          <div className="header-right-controls">
+            <button
+              className="theme-toggle"
+              onClick={toggleTheme}
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label="Toggle theme"
+              style={{ position: 'static' }}
+            >
+              {isDark ? '☀️' : '🌙'}
+            </button>
+            <button className="header-user-btn" onClick={() => setShowProfile(true)} title="My Tasks & Profile">
+              <span>{currentUser.avatar}</span>
+              <span className="hub-name">{currentUser.display_name}</span>
+            </button>
+          </div>
           {status === 'completed' && result && (
-            <div className="tabs-row">
-              {tabs.map(t => (
-                <button key={t.id}
-                  className={`tab-btn ${activeTab === t.id ? 'active' : ''}`}
-                  onClick={() => setActiveTab(t.id)}>
-                  {t.label}
-                </button>
-              ))}
+            <div className="tabs-header-row">
+              <div className="tabs-row">
+                {tabs.map(t => (
+                  <button key={t.id}
+                    className={`tab-btn ${activeTab === t.id ? 'active' : ''}`}
+                    onClick={() => setActiveTab(t.id)}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <button className="assign-tasks-btn" onClick={() => setShowTaskModal(true)}>
+                <ClipboardList size={13} />
+                Assign Tasks
+              </button>
             </div>
           )}
         </div>
@@ -659,5 +750,6 @@ export default function App() {
         </div>
       </main>
     </div>
+    </>
   );
 }
