@@ -1,0 +1,63 @@
+[
+  {
+    "id": "3a20b998-ba60-4009-ac97-c0e4b2086200",
+    "title": "Design overall project architecture and integration of speech-to-text model**",
+    "description": "From meeting: \"Trans-trivia AI Meeting Summarizer Project\"",
+    "assigned_to": "anujha",
+    "assigned_by": "ayush",
+    "meeting_title": "Trans-trivia AI Meeting Summarizer Project",
+    "due_date": "2026-07-23",
+    "priority": "high",
+    "status": "done",
+    "created_at": "2026-06-19T06:05:00.581497",
+    "updated_at": "2026-06-19T06:06:03.435018"
+  },
+  {
+    "id": "ec0d7fce-d0cf-4fa3-a150-335a82ce4a27",
+    "title": "Owner: Use",
+    "description": "From meeting: \"Trans-trivia AI Meeting Summarizer Project\"",
+    "assigned_to": "ayush",
+    "assigned_by": "ayush",
+    "meeting_title": "Trans-trivia AI Meeting Summarizer Project",
+    "due_date": "2026-02-04",
+    "priority": "medium",
+    "status": "pending",
+    "created_at": "2026-06-19T06:05:00.614766"
+  },
+  {
+    "id": "0dfe893a-affa-4abb-a883-72310a08c555",
+    "title": "Implement AI summarization workflow**",
+    "description": "From meeting: \"Trans-trivia AI Meeting Summarizer Project\"",
+    "assigned_to": "rahul",
+    "assigned_by": "ayush",
+    "meeting_title": "Trans-trivia AI Meeting Summarizer Project",
+    "due_date": null,
+    "priority": "medium",
+    "status": "pending",
+    "created_at": "2026-06-19T06:05:00.683729"
+  },
+  {
+    "id": "e5b7fec6-a8df-4483-b59e-0cb094168b0e",
+    "title": "Develop frontend user experience and dashboard**",
+    "description": "From meeting: \"Trans-trivia AI Meeting Summarizer Project\"",
+    "assigned_to": "maria",
+    "assigned_by": "ayush",
+    "meeting_title": "Trans-trivia AI Meeting Summarizer Project",
+    "due_date": "2026-02-03",
+    "priority": "high",
+    "status": "pending",
+    "created_at": "2026-06-19T06:05:00.770450"
+  },
+  {
+    "id": "06f98d71-5122-4e36-ba43-b684f00e88ae",
+    "title": "Ensure quality, accuracy, and development testing of all modules**",
+    "description": "From meeting: \"Trans-trivia AI Meeting Summarizer Project\"",
+    "assigned_to": "maria",
+    "assigned_by": "ayush",
+    "meeting_title": "Trans-trivia AI Meeting Summarizer Project",
+    "due_date": null,
+    "priority": "medium",
+    "status": "pending",
+    "created_at": "2026-06-19T06:05:00.883068"
+  }
+]

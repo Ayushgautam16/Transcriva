@@ -170,6 +170,14 @@
   transition: border-color 0.2s;
 }
 .sb-select:focus { border-color: rgba(239,159,39,0.4); }
+.sb-select option {
+  background-color: var(--warm-sidebar-surface) !important;
+  color: var(--warm-sidebar-text) !important;
+}
+select option {
+  background-color: var(--warm-card) !important;
+  color: var(--warm-text) !important;
+}
 
 /* API Keys panel */
 .api-panel {
