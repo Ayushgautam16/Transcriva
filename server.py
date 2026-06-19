@@ -2,6 +2,8 @@ import os
 import json
 import uuid
 import secrets
+import hashlib
+import hmac
 import threading
 import traceback
 from datetime import datetime
@@ -11,7 +13,6 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from passlib.context import CryptContext
 
 from utils.audio_processor import process_input
 from core.transcriber import transcribe_all
@@ -34,8 +35,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ─── Password Hashing ──────────────────────────────────────────────────────────
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# ─── Password Hashing (stdlib SHA-256 + salt, no extra deps) ───────────────────
+def _hash_password(password: str) -> str:
+    """Return 'salt:digest' using HMAC-SHA256."""
+    salt = secrets.token_hex(16)
+    digest = hmac.new(salt.encode(), password.encode(), hashlib.sha256).hexdigest()
+    return f"{salt}:{digest}"
+
+def _verify_password(password: str, stored: str) -> bool:
+    try:
+        salt, digest = stored.split(":", 1)
+        expected = hmac.new(salt.encode(), password.encode(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(expected, digest)
+    except Exception:
+        return False
 
 # ─── File-backed stores ────────────────────────────────────────────────────────
 USERS_FILE = "users_db.json"
@@ -86,7 +99,7 @@ def _seed_users():
                 "display_name": d["display_name"],
                 "avatar":       d["avatar"],
                 "role":         d["role"],
-                "password_hash": pwd_ctx.hash(d["password"]),
+                "password_hash": _hash_password(d["password"]),
             }
             changed = True
     if changed:
@@ -137,7 +150,7 @@ class ChatPayload(BaseModel):
 async def login(payload: LoginPayload):
     users = _get_users()
     user = users.get(payload.username.strip().lower())
-    if not user or not pwd_ctx.verify(payload.password, user["password_hash"]):
+    if not user or not _verify_password(payload.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     token = secrets.token_hex(32)
     active_sessions[token] = user["username"]
