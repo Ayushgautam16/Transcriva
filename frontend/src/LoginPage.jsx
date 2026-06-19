@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 const DEMO_USERS = [
-  { username: 'ayush',   password: 'ayush123',   display: 'Ayush',   avatar: '🧑‍💻', role: 'Admin',  color: '#EF9F27' },
-  { username: 'alice',   password: 'alice123',   display: 'Alice',   avatar: '👩‍💼', role: 'Member', color: '#D85A30' },
-  { username: 'bob',     password: 'bob123',     display: 'Bob',     avatar: '👨‍💼', role: 'Member', color: '#BA7517' },
-  { username: 'charlie', password: 'charlie123', display: 'Charlie', avatar: '🧑‍🔬', role: 'Member', color: '#c0783b' },
+  { username: 'ayush',  password: 'ayush123',  display: 'Ayush',  avatar: '🧑‍💻', role: 'Admin',  color: '#EF9F27' },
+  { username: 'anujha', password: 'anujha123', display: 'Anujha', avatar: '👩‍💼', role: 'Member', color: '#D85A30' },
+  { username: 'maria',  password: 'maria123',  display: 'Maria',  avatar: '👩‍🔬', role: 'Member', color: '#BA7517' },
+  { username: 'rahul',  password: 'rahul123',  display: 'Rahul',  avatar: '👨‍💼', role: 'Member', color: '#c0783b' },
 ];
 
 export default function LoginPage({ onLogin }) {

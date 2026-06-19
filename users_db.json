@@ -1,0 +1,30 @@
+{
+  "ayush": {
+    "username": "ayush",
+    "display_name": "Ayush",
+    "avatar": "🧑‍💻",
+    "role": "admin",
+    "password_hash": "108d35e9b0ef0f830b088168b272d2c0:066ae2f17db43e2b940a76bee456377869471709ecf30a217603576d08cd18c9"
+  },
+  "anujha": {
+    "username": "anujha",
+    "display_name": "Anujha",
+    "avatar": "👩‍💼",
+    "role": "member",
+    "password_hash": "4c1de4a278b3b165e89fe637892c3d61:20bbec6272b71a6552319fb2baa78632b008584b8199aae30739d7496f485383"
+  },
+  "maria": {
+    "username": "maria",
+    "display_name": "Maria",
+    "avatar": "👩‍🔬",
+    "role": "member",
+    "password_hash": "8db45838c4c7af73124eaff1629494b1:42b2620753a66b0cfb2a8ea64da075969bc37caea49d8d2d8b9db3a56d0bdf9b"
+  },
+  "rahul": {
+    "username": "rahul",
+    "display_name": "Rahul",
+    "avatar": "👨‍💼",
+    "role": "member",
+    "password_hash": "0908b290ec05501e268c59bf9c4bcfb6:fdbac21f0deac14782f116793b80fe96936b1dfbba1b9c9e969cf3379557d641"
+  }
+}

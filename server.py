@@ -86,10 +86,10 @@ def _save_tasks(tasks: list):
 def _seed_users():
     users = _get_users()
     demo = [
-        {"username": "ayush",   "password": "ayush123",   "display_name": "Ayush",   "avatar": "🧑‍💻", "role": "admin"},
-        {"username": "alice",   "password": "alice123",   "display_name": "Alice",   "avatar": "👩‍💼", "role": "member"},
-        {"username": "bob",     "password": "bob123",     "display_name": "Bob",     "avatar": "👨‍💼", "role": "member"},
-        {"username": "charlie", "password": "charlie123", "display_name": "Charlie", "avatar": "🧑‍🔬", "role": "member"},
+        {"username": "ayush",  "password": "ayush123",  "display_name": "Ayush",  "avatar": "🧑‍💻", "role": "admin"},
+        {"username": "anujha", "password": "anujha123", "display_name": "Anujha", "avatar": "👩‍💼", "role": "member"},
+        {"username": "maria",  "password": "maria123",  "display_name": "Maria",  "avatar": "👩‍🔬", "role": "member"},
+        {"username": "rahul",  "password": "rahul123",  "display_name": "Rahul",  "avatar": "👨‍💼", "role": "member"},
     ]
     changed = False
     for d in demo:
