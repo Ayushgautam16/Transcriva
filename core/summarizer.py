@@ -56,7 +56,6 @@ def summarize(transcript : str) -> str:
 def generate_title(transcript : str) -> str:
     llm = get_llm()
 
-    
 
     title_chain = (
         RunnablePassthrough() | RunnableLambda(lambda x:{"text":x}) | 
