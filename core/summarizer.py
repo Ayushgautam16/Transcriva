@@ -71,7 +71,7 @@ def generate_title(transcript : str) -> str:
         |StrOutputParser()
     )
 
-    return title_chain.invoke(transcipt[:2000])
+    return title_chain.invoke(transcript[:2000])
 
 
 
