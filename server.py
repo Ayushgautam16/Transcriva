@@ -285,6 +285,78 @@ async def delete_task(task_id: str, authorization: Optional[str] = Header(None))
             return {"status": "deleted"}
     raise HTTPException(status_code=404, detail="Task not found")
 
+# ─── Task dashboard & filters ─────────────────────────────────────────────────
+@app.get("/api/tasks/dashboard")
+async def task_dashboard(authorization: Optional[str] = Header(None)):
+    user = _get_current_user(authorization)
+    tasks = _get_tasks()
+    users = _get_users()
+
+    # Per-user breakdown
+    user_stats = []
+    for u in users.values():
+        u_tasks = [t for t in tasks if t["assigned_to"] == u["username"]]
+        user_stats.append({
+            "username":     u["username"],
+            "display_name": u["display_name"],
+            "avatar":       u["avatar"],
+            "role":         u["role"],
+            "total":        len(u_tasks),
+            "pending":      sum(1 for t in u_tasks if t["status"] == "pending"),
+            "in_progress":  sum(1 for t in u_tasks if t["status"] == "in_progress"),
+            "done":         sum(1 for t in u_tasks if t["status"] == "done"),
+        })
+
+    return {
+        "total_tasks":      len(tasks),
+        "total_users":      len(users),
+        "pending_tasks":    sum(1 for t in tasks if t["status"] == "pending"),
+        "in_progress_tasks": sum(1 for t in tasks if t["status"] == "in_progress"),
+        "done_tasks":       sum(1 for t in tasks if t["status"] == "done"),
+        "high_priority":    sum(1 for t in tasks if t.get("priority") == "high"),
+        "medium_priority":  sum(1 for t in tasks if t.get("priority") == "medium"),
+        "low_priority":     sum(1 for t in tasks if t.get("priority") == "low"),
+        "user_stats":       user_stats,
+    }
+
+@app.get("/api/tasks/status/{status}")
+async def tasks_by_status(status: str, authorization: Optional[str] = Header(None)):
+    user = _get_current_user(authorization)
+    tasks = _get_tasks()
+    filtered = [t for t in tasks if t["status"] == status]
+    if user["role"] != "admin":
+        filtered = [t for t in filtered if t["assigned_to"] == user["username"]]
+    return filtered
+
+@app.get("/api/tasks/priority/{priority}")
+async def tasks_by_priority(priority: str, authorization: Optional[str] = Header(None)):
+    user = _get_current_user(authorization)
+    tasks = _get_tasks()
+    filtered = [t for t in tasks if t.get("priority") == priority]
+    if user["role"] != "admin":
+        filtered = [t for t in filtered if t["assigned_to"] == user["username"]]
+    return filtered
+
+class TaskReassignPayload(BaseModel):
+    assigned_to: str
+
+@app.patch("/api/tasks/{task_id}/assign")
+async def reassign_task(task_id: str, payload: TaskReassignPayload, authorization: Optional[str] = Header(None)):
+    user = _get_current_user(authorization)
+    users = _get_users()
+    if payload.assigned_to not in users:
+        raise HTTPException(status_code=400, detail=f"User '{payload.assigned_to}' not found")
+    tasks = _get_tasks()
+    for t in tasks:
+        if t["id"] == task_id:
+            if t["assigned_by"] != user["username"] and user["role"] != "admin":
+                raise HTTPException(status_code=403, detail="Not authorised to reassign")
+            t["assigned_to"] = payload.assigned_to
+            t["updated_at"] = datetime.utcnow().isoformat()
+            _save_tasks(tasks)
+            return t
+    raise HTTPException(status_code=404, detail="Task not found")
+
 # ─── Meeting analysis state ───────────────────────────────────────────────────
 global_state = {
     "status": "idle",

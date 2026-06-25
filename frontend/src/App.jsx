@@ -2,12 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import {
   AlertTriangle, Loader2, Send, Trash2, Download,
   Copy, Check, UploadCloud, ChevronDown, ChevronUp,
-  MessageSquare, Zap, ClipboardList, LogOut, User
+  MessageSquare, Zap, ClipboardList, LogOut, User, LayoutDashboard
 } from 'lucide-react';
 import './App.css';
 import LoginPage from './LoginPage';
 import ProfilePage from './ProfilePage';
 import TaskAssignModal from './TaskAssignModal';
+import TaskManagementPage from './TaskManagementPage';
 
 /* ── Floating particle colours ── */
 const PARTICLE_COLORS = ['#EF9F27','#D85A30','#FAC775','#BA7517','#F5C4B3','#FAEEDA'];
@@ -57,6 +58,7 @@ export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem('transcriva_token') || null);
   const [showProfile, setShowProfile] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showTaskBoard, setShowTaskBoard] = useState(false);
 
   const handleLogin = (user, tok) => {
     setCurrentUser(user);
@@ -255,6 +257,26 @@ export default function App() {
     return <LoginPage onLogin={handleLogin} />;
   }
 
+  /* ── Task Board full-page view ── */
+  if (showTaskBoard) {
+    return (
+      <>
+        {showProfile && (
+          <ProfilePage
+            currentUser={currentUser}
+            token={token}
+            onClose={() => setShowProfile(false)}
+          />
+        )}
+        <TaskManagementPage
+          token={token}
+          currentUser={currentUser}
+          onBack={() => setShowTaskBoard(false)}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       {/* Profile overlay */}
@@ -307,6 +329,12 @@ export default function App() {
           <button className="my-tasks-btn" onClick={() => setShowProfile(true)}>
             <ClipboardList size={14} />
             My Tasks
+          </button>
+
+          {/* Task Board nav */}
+          <button className="task-board-btn" onClick={() => setShowTaskBoard(true)}>
+            <LayoutDashboard size={14} />
+            Task Board
           </button>
 
           {/* Input Source */}
