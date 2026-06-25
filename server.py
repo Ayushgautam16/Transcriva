@@ -255,7 +255,9 @@ async def create_task(payload: TaskCreatePayload, authorization: Optional[str] =
     return task
 
 @app.patch("/api/tasks/{task_id}")
+
 async def update_task(task_id: str, payload: TaskUpdatePayload, authorization: Optional[str] = Header(None)):
+    
     user = _get_current_user(authorization)
     tasks = _get_tasks()
     for t in tasks:
@@ -279,7 +281,7 @@ async def delete_task(task_id: str, authorization: Optional[str] = Header(None))
 
     tasks = _get_tasks()
     for i, t in enumerate(tasks):
-        
+
         if t["id"] == task_id:
             if t["assigned_by"] != user["username"] and user["role"] != "admin":
                 raise HTTPException(status_code=403, detail="Not authorised")
