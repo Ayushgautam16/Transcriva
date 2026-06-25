@@ -282,6 +282,7 @@ async def delete_task(task_id: str, authorization: Optional[str] = Header(None))
                 raise HTTPException(status_code=403, detail="Not authorised")
             tasks.pop(i)
             _save_tasks(tasks)
+            
             return {"status": "deleted"}
     raise HTTPException(status_code=404, detail="Task not found")
 
