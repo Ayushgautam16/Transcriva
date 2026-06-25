@@ -273,16 +273,19 @@ async def update_task(task_id: str, payload: TaskUpdatePayload, authorization: O
     raise HTTPException(status_code=404, detail="Task not found")
 
 @app.delete("/api/tasks/{task_id}")
+
 async def delete_task(task_id: str, authorization: Optional[str] = Header(None)):
     user = _get_current_user(authorization)
+
     tasks = _get_tasks()
     for i, t in enumerate(tasks):
+        
         if t["id"] == task_id:
             if t["assigned_by"] != user["username"] and user["role"] != "admin":
                 raise HTTPException(status_code=403, detail="Not authorised")
             tasks.pop(i)
             _save_tasks(tasks)
-            
+
             return {"status": "deleted"}
     raise HTTPException(status_code=404, detail="Task not found")
 
