@@ -323,14 +323,16 @@ async def get_tasks(authorization: Optional[str] = Header(None)):
 async def create_task(payload: TaskCreatePayload, authorization: Optional[str] = Header(None)):
     user = _get_current_user(authorization)
     users = _get_users()
-    
+
     if payload.assigned_to not in users:
         raise HTTPException(status_code=400, detail=f"User '{payload.assigned_to}' not found")
     task = DBTask(
         title=payload.title,
 
         description=payload.description or "",
+
         assigned_to=payload.assigned_to,
+        
         assigned_by=user["username"],
         meeting_title=payload.meeting_title or "",
         due_date=payload.due_date,
