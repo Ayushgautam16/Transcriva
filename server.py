@@ -303,13 +303,21 @@ async def list_users(authorization: Optional[str] = Header(None)):
     ]
 
 # ─── Task endpoints ───────────────────────────────────────────────────────────
+def _parse_task_id(task_id: str) -> int:
+    try:
+        return int(task_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Task not found")
+
 @app.get("/api/tasks")
 async def get_tasks(authorization: Optional[str] = Header(None)):
     user = _get_current_user(authorization)
-    tasks = _get_tasks()
+    with SessionLocal() as db:
+        tasks = db.query(DBTask).all()
+    task_dicts = [_task_to_dict(t) for t in tasks]
     if user["role"] == "admin":
-        return tasks
-    return [t for t in tasks if t["assigned_to"] == user["username"]]
+        return task_dicts
+    return [t for t in task_dicts if t["assigned_to"] == user["username"]]
 
 @app.post("/api/tasks")
 async def create_task(payload: TaskCreatePayload, authorization: Optional[str] = Header(None)):
@@ -317,71 +325,76 @@ async def create_task(payload: TaskCreatePayload, authorization: Optional[str] =
     users = _get_users()
     if payload.assigned_to not in users:
         raise HTTPException(status_code=400, detail=f"User '{payload.assigned_to}' not found")
-    task = {
-        "id":            str(uuid.uuid4()),
-        "title":         payload.title,
-        "description":   payload.description or "",
-        "assigned_to":   payload.assigned_to,
-        "assigned_by":   user["username"],
-        "meeting_title": payload.meeting_title or "",
-        "due_date":      payload.due_date,
-        "priority":      payload.priority or "medium",
-        "status":        "pending",
-        "created_at":    datetime.utcnow().isoformat(),
-    }
-    tasks = _get_tasks()
-    tasks.append(task)
-    _save_tasks(tasks)
-    return task
+    task = DBTask(
+        title=payload.title,
+        description=payload.description or "",
+        assigned_to=payload.assigned_to,
+        assigned_by=user["username"],
+        meeting_title=payload.meeting_title or "",
+        due_date=payload.due_date,
+        priority=payload.priority or "medium",
+        status="pending",
+        created_at=datetime.utcnow().isoformat(),
+        updated_at=datetime.utcnow().isoformat(),
+    )
+    with SessionLocal() as db:
+        db.add(task)
+        db.commit()
+        db.refresh(task)
+        return _task_to_dict(task)
 
 @app.patch("/api/tasks/{task_id}")
-
 async def update_task(task_id: str, payload: TaskUpdatePayload, authorization: Optional[str] = Header(None)):
-    
     user = _get_current_user(authorization)
-    tasks = _get_tasks()
-    for t in tasks:
-        if t["id"] == task_id:
-            if t["assigned_to"] != user["username"] and user["role"] != "admin":
-                raise HTTPException(status_code=403, detail="Not authorised")
-            if payload.status is not None:     t["status"]      = payload.status
-            if payload.title is not None:      t["title"]       = payload.title
-            if payload.description is not None: t["description"] = payload.description
-            if payload.priority is not None:   t["priority"]    = payload.priority
-            if payload.due_date is not None:   t["due_date"]    = payload.due_date
-            t["updated_at"] = datetime.utcnow().isoformat()
-            _save_tasks(tasks)
-            return t
-    raise HTTPException(status_code=404, detail="Task not found")
+    task_db_id = _parse_task_id(task_id)
+    with SessionLocal() as db:
+        task = db.query(DBTask).filter(DBTask.id == task_db_id).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        if task.assigned_to != user["username"] and user["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Not authorised")
+        if payload.status is not None:
+            task.status = payload.status
+        if payload.title is not None:
+            task.title = payload.title
+        if payload.description is not None:
+            task.description = payload.description
+        if payload.priority is not None:
+            task.priority = payload.priority
+        if payload.due_date is not None:
+            task.due_date = payload.due_date
+        task.updated_at = datetime.utcnow().isoformat()
+        db.commit()
+        db.refresh(task)
+        return _task_to_dict(task)
 
 @app.delete("/api/tasks/{task_id}")
-
 async def delete_task(task_id: str, authorization: Optional[str] = Header(None)):
     user = _get_current_user(authorization)
-
-    tasks = _get_tasks()
-    for i, t in enumerate(tasks):
-
-        if t["id"] == task_id:
-            if t["assigned_by"] != user["username"] and user["role"] != "admin":
-                raise HTTPException(status_code=403, detail="Not authorised")
-            tasks.pop(i)
-            _save_tasks(tasks)
-
-            return {"status": "deleted"}
-    raise HTTPException(status_code=404, detail="Task not found")
+    task_db_id = _parse_task_id(task_id)
+    with SessionLocal() as db:
+        task = db.query(DBTask).filter(DBTask.id == task_db_id).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        if task.assigned_by != user["username"] and user["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Not authorised")
+        db.delete(task)
+        db.commit()
+        return {"status": "deleted"}
 
 # ─── Task dashboard & filters ─────────────────────────────────────────────────
 @app.get("/api/tasks/dashboard")
 async def task_dashboard(authorization: Optional[str] = Header(None)):
     user = _get_current_user(authorization)
-    tasks = _get_tasks()
+    with SessionLocal() as db:
+        tasks = db.query(DBTask).all()
     users = _get_users()
 
-    # Per-user breakdown
+    task_dicts = [_task_to_dict(t) for t in tasks]
+
     user_stats = []
     for u in users.values():
-        u_tasks = [t for t in tasks if t["assigned_to"] == u["username"]]
+        u_tasks = [t for t in task_dicts if t["assigned_to"] == u["username"]]
         user_stats.append({
             "username":     u["username"],
             "display_name": u["display_name"],
@@ -394,34 +407,36 @@ async def task_dashboard(authorization: Optional[str] = Header(None)):
         })
 
     return {
-        "total_tasks":      len(tasks),
+        "total_tasks":      len(task_dicts),
         "total_users":      len(users),
-        "pending_tasks":    sum(1 for t in tasks if t["status"] == "pending"),
-        "in_progress_tasks": sum(1 for t in tasks if t["status"] == "in_progress"),
-        "done_tasks":       sum(1 for t in tasks if t["status"] == "done"),
-        "high_priority":    sum(1 for t in tasks if t.get("priority") == "high"),
-        "medium_priority":  sum(1 for t in tasks if t.get("priority") == "medium"),
-        "low_priority":     sum(1 for t in tasks if t.get("priority") == "low"),
+        "pending_tasks":    sum(1 for t in task_dicts if t["status"] == "pending"),
+        "in_progress_tasks": sum(1 for t in task_dicts if t["status"] == "in_progress"),
+        "done_tasks":       sum(1 for t in task_dicts if t["status"] == "done"),
+        "high_priority":    sum(1 for t in task_dicts if t.get("priority") == "high"),
+        "medium_priority":  sum(1 for t in task_dicts if t.get("priority") == "medium"),
+        "low_priority":     sum(1 for t in task_dicts if t.get("priority") == "low"),
         "user_stats":       user_stats,
     }
 
 @app.get("/api/tasks/status/{status}")
 async def tasks_by_status(status: str, authorization: Optional[str] = Header(None)):
     user = _get_current_user(authorization)
-    tasks = _get_tasks()
-    filtered = [t for t in tasks if t["status"] == status]
+    with SessionLocal() as db:
+        tasks = db.query(DBTask).filter(DBTask.status == status).all()
+    task_dicts = [_task_to_dict(t) for t in tasks]
     if user["role"] != "admin":
-        filtered = [t for t in filtered if t["assigned_to"] == user["username"]]
-    return filtered
+        task_dicts = [t for t in task_dicts if t["assigned_to"] == user["username"]]
+    return task_dicts
 
 @app.get("/api/tasks/priority/{priority}")
 async def tasks_by_priority(priority: str, authorization: Optional[str] = Header(None)):
     user = _get_current_user(authorization)
-    tasks = _get_tasks()
-    filtered = [t for t in tasks if t.get("priority") == priority]
+    with SessionLocal() as db:
+        tasks = db.query(DBTask).filter(DBTask.priority == priority).all()
+    task_dicts = [_task_to_dict(t) for t in tasks]
     if user["role"] != "admin":
-        filtered = [t for t in filtered if t["assigned_to"] == user["username"]]
-    return filtered
+        task_dicts = [t for t in task_dicts if t["assigned_to"] == user["username"]]
+    return task_dicts
 
 class TaskReassignPayload(BaseModel):
     assigned_to: str
@@ -432,16 +447,18 @@ async def reassign_task(task_id: str, payload: TaskReassignPayload, authorizatio
     users = _get_users()
     if payload.assigned_to not in users:
         raise HTTPException(status_code=400, detail=f"User '{payload.assigned_to}' not found")
-    tasks = _get_tasks()
-    for t in tasks:
-        if t["id"] == task_id:
-            if t["assigned_by"] != user["username"] and user["role"] != "admin":
-                raise HTTPException(status_code=403, detail="Not authorised to reassign")
-            t["assigned_to"] = payload.assigned_to
-            t["updated_at"] = datetime.utcnow().isoformat()
-            _save_tasks(tasks)
-            return t
-    raise HTTPException(status_code=404, detail="Task not found")
+    task_db_id = _parse_task_id(task_id)
+    with SessionLocal() as db:
+        task = db.query(DBTask).filter(DBTask.id == task_db_id).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        if task.assigned_by != user["username"] and user["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Not authorised to reassign")
+        task.assigned_to = payload.assigned_to
+        task.updated_at = datetime.utcnow().isoformat()
+        db.commit()
+        db.refresh(task)
+        return _task_to_dict(task)
 
 # ─── SQLAlchemy-backed task management routes ───────────────────────────────────
 @app.post("/api/db/users", response_model=DBUserResponse)
