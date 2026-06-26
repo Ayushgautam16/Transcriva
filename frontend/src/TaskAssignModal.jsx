@@ -12,14 +12,22 @@ function parseActionItems(raw = '') {
 }
 
 function TaskRow({ item, index, users, onUpdate }) {
+  const [localTitle, setLocalTitle] = useState(item.title);
+
+  // Sync local title with props if props title changes from outside
+  useEffect(() => {
+    setLocalTitle(item.title);
+  }, [item.title]);
+
   return (
     <div className="tam-row">
       <div className="tam-row-num">{index + 1}</div>
       <div className="tam-row-content">
         <input
           className="tam-task-input"
-          value={item.title}
-          onChange={e => onUpdate(index, 'title', e.target.value)}
+          value={localTitle}
+          onChange={e => setLocalTitle(e.target.value)}
+          onBlur={() => onUpdate(index, 'title', localTitle)}
           placeholder="Task description"
         />
         <div className="tam-row-controls">
@@ -106,7 +114,9 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
     }
     setSaving(true);
     let sent = 0, skipped = items.length - toSend.length;
-    for (const it of toSend) {
+
+    // Execute all assignments in parallel to prevent UI blocking/network lag
+    const promises = toSend.map(async (it) => {
       try {
         const res = await fetch('/api/tasks', {
           method: 'POST',
@@ -122,10 +132,20 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
         });
         if (res.ok) {
           sent++;
-          setItems(prev => prev.map(p => p.title === it.title ? { ...p, assigned: true } : p));
+          return it.title;
         }
       } catch {}
-    }
+      return null;
+    });
+
+    const results = await Promise.all(promises);
+    const successfulTitles = results.filter(title => title !== null);
+
+    // Update items state exactly once to eliminate multiple intermediate re-renders
+    setItems(prev => prev.map(p => 
+      successfulTitles.includes(p.title) ? { ...p, assigned: true } : p
+    ));
+
     setSaving(false);
     setSummary({ sent, skipped });
     setDone(true);

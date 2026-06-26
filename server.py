@@ -58,12 +58,32 @@ class DBTask(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     description = Column(String)
-    priority = Column(String, default="Medium")
-    status = Column(String, default="To Do")
-    due_date = Column(String)
+    priority = Column(String, default="medium")
+    status = Column(String, default="pending")
+    due_date = Column(String, nullable=True)
+    assigned_to = Column(String, nullable=True)
+    assigned_by = Column(String, nullable=True)
+    meeting_title = Column(String, nullable=True)
+    created_at = Column(String, nullable=True)
+    updated_at = Column(String, nullable=True)
     assigned_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     user = relationship("DBUser", back_populates="tasks")
+
+# Auto-migration: if tasks table has old schema, recreate tasks.db
+if os.path.exists("tasks.db"):
+    try:
+        import sqlite3
+        conn = sqlite3.connect("tasks.db")
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(tasks)")
+        columns = [row[1] for row in cursor.fetchall()]
+        conn.close()
+        if "assigned_to" not in columns:
+            os.remove("tasks.db")
+            print("Removed old tasks.db to migrate to new schema")
+    except Exception as e:
+        print(f"Migration check error: {e}")
 
 Base.metadata.create_all(bind=engine)
 
@@ -303,6 +323,21 @@ async def list_users(authorization: Optional[str] = Header(None)):
     ]
 
 # ─── Task endpoints ───────────────────────────────────────────────────────────
+def _task_to_dict(task: DBTask) -> dict:
+    return {
+        "id": task.id,
+        "title": task.title,
+        "description": task.description or "",
+        "priority": task.priority or "medium",
+        "status": task.status or "pending",
+        "due_date": task.due_date or "",
+        "assigned_to": task.assigned_to or "",
+        "assigned_by": task.assigned_by or "",
+        "meeting_title": task.meeting_title or "",
+        "created_at": task.created_at or "",
+        "updated_at": task.updated_at or "",
+    }
+
 def _parse_task_id(task_id: str) -> int:
     try:
         return int(task_id)
