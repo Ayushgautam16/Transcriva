@@ -9,11 +9,13 @@ import traceback
 from datetime import datetime
 from typing import Optional
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header, Depends
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship, Session
 
 from utils.audio_processor import process_input
 from core.transcriber import transcribe_all
@@ -32,6 +34,46 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ─── SQLAlchemy-backed task management database ───────────────────────────────
+DATABASE_URL = "sqlite:///./tasks.db"
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False}
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+class DBUser(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+
+    tasks = relationship("DBTask", back_populates="user")
+
+class DBTask(Base):
+    __tablename__ = "tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(String)
+    priority = Column(String, default="Medium")
+    status = Column(String, default="To Do")
+    due_date = Column(String)
+    assigned_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    user = relationship("DBUser", back_populates="tasks")
+
+Base.metadata.create_all(bind=engine)
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # ─── Password Hashing (stdlib HMAC-SHA256 + salt) ─────────────────────────────
 def _hash_password(password: str) -> str:
@@ -144,6 +186,44 @@ class TaskUpdatePayload(BaseModel):
 
 class ChatPayload(BaseModel):
     question: str
+
+class DBUserCreate(BaseModel):
+    name: str
+
+class DBUserResponse(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
+class DBTaskCreate(BaseModel):
+    title: str
+    description: str
+    priority: str
+    due_date: str
+
+class DBAssignTask(BaseModel):
+    user_id: int
+
+class DBTaskUpdate(BaseModel):
+    title: str
+    description: str
+    priority: str
+    status: str
+    due_date: str
+
+class DBTaskResponse(BaseModel):
+    id: int
+    title: str
+    description: str
+    priority: str
+    status: str
+    due_date: str
+    assigned_user_id: int | None = None
+
+    class Config:
+        orm_mode = True
 
 # ─── Auth endpoints ───────────────────────────────────────────────────────────
 @app.post("/api/auth/register")
@@ -362,6 +442,88 @@ async def reassign_task(task_id: str, payload: TaskReassignPayload, authorizatio
             _save_tasks(tasks)
             return t
     raise HTTPException(status_code=404, detail="Task not found")
+
+# ─── SQLAlchemy-backed task management routes ───────────────────────────────────
+@app.post("/api/db/users", response_model=DBUserResponse)
+def db_create_user(user: DBUserCreate, db: Session = Depends(get_db)):
+    existing_user = db.query(DBUser).filter(DBUser.name == user.name).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User already exists")
+    new_user = DBUser(name=user.name)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+@app.get("/api/db/users", response_model=list[DBUserResponse])
+def db_get_users(db: Session = Depends(get_db)):
+    return db.query(DBUser).all()
+
+@app.post("/api/db/tasks", response_model=DBTaskResponse)
+def db_create_task(task: DBTaskCreate, db: Session = Depends(get_db)):
+    new_task = DBTask(
+        title=task.title,
+        description=task.description,
+        priority=task.priority,
+        due_date=task.due_date,
+    )
+    db.add(new_task)
+    db.commit()
+    db.refresh(new_task)
+    return new_task
+
+@app.get("/api/db/tasks", response_model=list[DBTaskResponse])
+def db_get_all_tasks(db: Session = Depends(get_db)):
+    return db.query(DBTask).all()
+
+@app.get("/api/db/tasks/{task_id}", response_model=DBTaskResponse)
+def db_get_task(task_id: int, db: Session = Depends(get_db)):
+    task = db.query(DBTask).filter(DBTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+@app.patch("/api/db/tasks/{task_id}/assign")
+def db_assign_task(task_id: int, data: DBAssignTask, db: Session = Depends(get_db)):
+    task = db.query(DBTask).filter(DBTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    user = db.query(DBUser).filter(DBUser.id == data.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    task.assigned_user_id = user.id
+    db.commit()
+    db.refresh(task)
+    return {
+        "message": f"Task assigned to {user.name}",
+        "task_id": task.id,
+        "assigned_user_id": user.id,
+    }
+
+@app.put("/api/db/tasks/{task_id}")
+def db_update_task(task_id: int, updated_task: DBTaskUpdate, db: Session = Depends(get_db)):
+    task = db.query(DBTask).filter(DBTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    task.title = updated_task.title
+    task.description = updated_task.description
+    task.priority = updated_task.priority
+    task.status = updated_task.status
+    task.due_date = updated_task.due_date
+    db.commit()
+    db.refresh(task)
+    return {"message": "Task updated successfully"}
+
+@app.get("/api/db/users/{user_id}/tasks")
+def db_get_tasks_by_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(DBUser).filter(DBUser.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    tasks = db.query(DBTask).filter(DBTask.assigned_user_id == user_id).all()
+    return {
+        "user": user.name,
+        "tasks": tasks,
+    }
 
 # ─── Meeting analysis state ───────────────────────────────────────────────────
 global_state = {
