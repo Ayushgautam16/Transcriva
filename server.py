@@ -327,6 +327,7 @@ async def create_task(payload: TaskCreatePayload, authorization: Optional[str] =
         raise HTTPException(status_code=400, detail=f"User '{payload.assigned_to}' not found")
     task = DBTask(
         title=payload.title,
+        
         description=payload.description or "",
         assigned_to=payload.assigned_to,
         assigned_by=user["username"],
@@ -334,6 +335,7 @@ async def create_task(payload: TaskCreatePayload, authorization: Optional[str] =
         due_date=payload.due_date,
         priority=payload.priority or "medium",
         status="pending",
+
         created_at=datetime.utcnow().isoformat(),
         updated_at=datetime.utcnow().isoformat(),
     )
