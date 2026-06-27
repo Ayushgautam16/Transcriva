@@ -338,9 +338,18 @@ export default function TaskManagementPage({ token, currentUser, onBack }) {
         fetch('/api/users',           { headers: authHeaders }),
         fetch('/api/tasks/dashboard', { headers: authHeaders }),
       ]);
-      if (tRes.ok) setTasks(await tRes.json());
-      if (uRes.ok) setUsers(await uRes.json());
-      if (dRes.ok) setDashboard(await dRes.json());
+      if (tRes.ok) {
+        const data = await tRes.json();
+        if (Array.isArray(data)) setTasks(data);
+      }
+      if (uRes.ok) {
+        const data = await uRes.json();
+        if (Array.isArray(data)) setUsers(data);
+      }
+      if (dRes.ok) {
+        const data = await dRes.json();
+        if (data && typeof data === 'object' && !Array.isArray(data)) setDashboard(data);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -380,7 +389,7 @@ export default function TaskManagementPage({ token, currentUser, onBack }) {
     done:        filtered.filter(t => t.status === 'done'),
   };
 
-  const d = dashboard || {
+  const d = dashboard && typeof dashboard === 'object' && !Array.isArray(dashboard) ? dashboard : {
     total_tasks: 0, total_users: 0, pending_tasks: 0, in_progress_tasks: 0,
     done_tasks: 0, high_priority: 0, medium_priority: 0, low_priority: 0,
     user_stats: [],

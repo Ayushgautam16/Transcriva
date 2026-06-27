@@ -3,8 +3,9 @@ import { X, Send, Loader2, CheckCircle } from 'lucide-react';
 
 const PRIORITIES = ['high', 'medium', 'low'];
 
-// Parse raw action_items string into individual task lines
-function parseActionItems(raw = '') {
+// Parse raw action_items string into individual task lines safely
+function parseActionItems(raw) {
+  if (typeof raw !== 'string') return [];
   return raw
     .split('\n')
     .map(l => l.replace(/^[-•*\d.)\s]+/, '').trim())
@@ -38,7 +39,7 @@ function TaskRow({ item, index, users, onUpdate }) {
             onChange={e => onUpdate(index, 'assigned_to', e.target.value)}
           >
             <option value="">— Assign to —</option>
-            {users.map(u => (
+            {Array.isArray(users) && users.map(u => (
               <option key={u.username} value={u.username}>
                 {u.avatar} {u.display_name}
               </option>
@@ -85,11 +86,18 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
   const [summary, setSummary] = useState({ sent: 0, skipped: 0 });
 
   useEffect(() => {
-    // Load team members
+    // Load team members safely checking response status
     fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(setUsers)
-      .catch(() => {});
+      .then(r => {
+        if (r.ok) return r.json();
+        throw new Error('Failed to load users');
+      })
+      .then(data => {
+        if (Array.isArray(data)) setUsers(data);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
 
     // Pre-parse action items from meeting result
     const parsed = parseActionItems(result?.action_items || '');

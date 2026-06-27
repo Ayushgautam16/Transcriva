@@ -70,7 +70,7 @@ class DBTask(Base):
 
     user = relationship("DBUser", back_populates="tasks")
 
-# Auto-migration: if tasks table has old schema, recreate tasks.db
+# Auto-migration: safely add missing columns if they do not exist
 if os.path.exists("tasks.db"):
     try:
         import sqlite3
@@ -78,12 +78,23 @@ if os.path.exists("tasks.db"):
         cursor = conn.cursor()
         cursor.execute("PRAGMA table_info(tasks)")
         columns = [row[1] for row in cursor.fetchall()]
+        
+        missing_columns = {
+            "assigned_to": "TEXT",
+            "assigned_by": "TEXT",
+            "meeting_title": "TEXT",
+            "created_at": "TEXT",
+            "updated_at": "TEXT"
+        }
+        
+        for col, col_type in missing_columns.items():
+            if col not in columns:
+                cursor.execute(f"ALTER TABLE tasks ADD COLUMN {col} {col_type}")
+                print(f"Added column {col} to tasks table")
+        conn.commit()
         conn.close()
-        if "assigned_to" not in columns:
-            os.remove("tasks.db")
-            print("Removed old tasks.db to migrate to new schema")
     except Exception as e:
-        print(f"Migration check error: {e}")
+        print(f"Migration error: {e}")
 
 Base.metadata.create_all(bind=engine)
 

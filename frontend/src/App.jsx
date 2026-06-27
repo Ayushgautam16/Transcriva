@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   AlertTriangle, Loader2, Send, Trash2, Download,
   Copy, Check, UploadCloud, ChevronDown, ChevronUp,
@@ -14,16 +14,19 @@ import TaskManagementPage from './TaskManagementPage';
 const PARTICLE_COLORS = ['#EF9F27','#D85A30','#FAC775','#BA7517','#F5C4B3','#FAEEDA'];
 
 function Particles() {
-  const items = Array.from({ length: 24 }, (_, i) => ({
-    id: i,
-    size: 10 + Math.random() * 22,
-    left: 5 + Math.random() * 90,
-    bottom: Math.random() * 20,
-    color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
-    dur: `${4 + Math.random() * 5}s`,
-    delay: `${Math.random() * 6}s`,
-    opacity: 0.55 + Math.random() * 0.35,
-  }));
+  const items = useMemo(() => {
+    return Array.from({ length: 24 }, (_, i) => ({
+      id: i,
+      size: 10 + Math.random() * 22,
+      left: 5 + Math.random() * 90,
+      bottom: Math.random() * 20,
+      color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
+      dur: `${4 + Math.random() * 5}s`,
+      delay: `${Math.random() * 6}s`,
+      opacity: 0.55 + Math.random() * 0.35,
+    }));
+  }, []);
+
   return (
     <div className="particles-layer">
       {items.map(p => (
