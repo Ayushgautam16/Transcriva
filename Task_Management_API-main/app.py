@@ -10,7 +10,6 @@ from schemas import (
     UserResponse,
     TaskResponse
 )
-
 # Create tables
 Base.metadata.create_all(bind=engine)
 
@@ -19,7 +18,6 @@ app = FastAPI(
     description="Task Assignment and Tracking System",
     version="1.0.0"
 )
-
 
 # Database Dependency
 def get_db():
