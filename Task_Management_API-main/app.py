@@ -18,8 +18,6 @@ app = FastAPI(
     description="Task Assignment and Tracking System",
     version="1.0.0"
 )
-
-# Database Dependency
 def get_db():
     db = SessionLocal()
     try:
