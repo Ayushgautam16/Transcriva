@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-
 from database import SessionLocal, engine, Base
 from models import User, Task
 from schemas import (
@@ -11,7 +10,6 @@ from schemas import (
     UserResponse,
     TaskResponse
 )
-
 # Create tables
 Base.metadata.create_all(bind=engine)
 
@@ -20,9 +18,6 @@ app = FastAPI(
     description="Task Assignment and Tracking System",
     version="1.0.0"
 )
-
-
-# Database Dependency
 def get_db():
     db = SessionLocal()
     try:
