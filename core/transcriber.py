@@ -1,4 +1,3 @@
-import whisper
 import os
 import requests
 from pydub import AudioSegment
@@ -26,20 +25,33 @@ def load_model(model_name: str = None):
     if model_name is None:
         model_name = WHISPER_MODEL
 
-    if _model is None or _loaded_model_name != model_name: 
+    if _model is None or _loaded_model_name != model_name:
         print(f"Loading Whisper model: {model_name} ...")
-        # Free old model memory if loading a different one
+        # Free old model memory if loading a different one.
         _model = None
         import gc
-        import torch
         gc.collect()
-        if torch.cuda.is_available():
+
+        try:
+            import torch
+        except Exception:
+            torch = None
+
+        if torch and torch.cuda.is_available():
             torch.cuda.empty_cache()
-            
-        _model = whisper.load_model(model_name) 
+
+        try:
+            import whisper
+            _model = whisper.load_model(model_name)
+        except Exception as exc:
+            raise RuntimeError(
+                "Whisper model failed to load. Ensure torch/whisper are installed "
+                "and compatible with your Python/OS setup."
+            ) from exc
+
         _loaded_model_name = model_name
         print(f"Whisper model {model_name} loaded.")
-    return _model 
+    return _model
 
 
 def transcribe_chunk_whisper(chunk_path: str, whisper_model: str = None) -> str:

@@ -107,6 +107,18 @@ export default function App() {
   const [apiOpen, setApiOpen] = useState(false);
   const [ytOpen,  setYtOpen]  = useState(false);
 
+  const openProfile = () => {
+    setShowTaskBoard(false);
+    setShowTaskModal(false);
+    setShowProfile(true);
+  };
+
+  const openTaskBoard = () => {
+    setShowProfile(false);
+    setShowTaskModal(false);
+    setShowTaskBoard(true);
+  };
+
 
   // Apply dark mode class to body
   useEffect(() => {
@@ -329,13 +341,13 @@ export default function App() {
         <div className="sidebar-body">
 
           {/* My Tasks nav */}
-          <button className="my-tasks-btn" onClick={() => setShowProfile(true)}>
+          <button className="my-tasks-btn" onClick={openProfile}>
             <ClipboardList size={14} />
             My Tasks
           </button>
 
           {/* Task Board nav */}
-          <button className="task-board-btn" onClick={() => setShowTaskBoard(true)}>
+          <button className="task-board-btn" onClick={openTaskBoard}>
             <LayoutDashboard size={14} />
             Task Board
           </button>
@@ -539,7 +551,7 @@ export default function App() {
             >
               {isDark ? '☀️' : '🌙'}
             </button>
-            <button className="header-user-btn" onClick={() => setShowProfile(true)} title="My Tasks & Profile">
+            <button className="header-user-btn" onClick={openProfile} title="My Tasks & Profile">
               <span>{currentUser.avatar}</span>
               <span className="hub-name">{currentUser.display_name}</span>
             </button>

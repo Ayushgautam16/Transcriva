@@ -3,6 +3,12 @@ import { X, Send, Loader2, CheckCircle } from 'lucide-react';
 
 const PRIORITIES = ['high', 'medium', 'low'];
 
+function getUserLabel(user) {
+  if (!user) return 'Unknown user';
+  const name = user.display_name || user.display || user.name || user.username || 'Unknown user';
+  return user.username ? `${name} (@${user.username})` : name;
+}
+
 // Parse raw action_items string into individual task lines safely
 function parseActionItems(raw) {
   if (typeof raw !== 'string') return [];
@@ -41,7 +47,7 @@ function TaskRow({ item, index, users, onUpdate }) {
             <option value="">— Assign to —</option>
             {Array.isArray(users) && users.map(u => (
               <option key={u.username} value={u.username}>
-                {u.avatar} {u.display_name}
+                {u.avatar} {getUserLabel(u)}
               </option>
             ))}
           </select>

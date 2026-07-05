@@ -125,8 +125,14 @@ export default function ProfilePage({ currentUser, token, onClose }) {
         fetch('/api/tasks',  { headers: authHeaders }),
         fetch('/api/users',  { headers: authHeaders }),
       ]);
-      if (tRes.ok) setTasks(await tRes.json());
-      if (uRes.ok) setUsers(await uRes.json());
+      if (tRes.ok) {
+        const taskData = await tRes.json();
+        setTasks(Array.isArray(taskData) ? taskData : []);
+      }
+      if (uRes.ok) {
+        const userData = await uRes.json();
+        setUsers(Array.isArray(userData) ? userData : []);
+      }
     } finally { setLoading(false); }
   }, [token]);
 
@@ -137,8 +143,8 @@ export default function ProfilePage({ currentUser, token, onClose }) {
 
   // Tasks shown to this user (admin sees all, member sees only theirs)
   const myTasks = currentUser.role === 'admin'
-    ? tasks
-    : tasks.filter(t => t.assigned_to === currentUser.username);
+    ? (Array.isArray(tasks) ? tasks : [])
+    : (Array.isArray(tasks) ? tasks : []).filter(t => t.assigned_to === currentUser.username);
 
   const filtered = filter === 'all' ? myTasks : myTasks.filter(t => t.status === filter);
 

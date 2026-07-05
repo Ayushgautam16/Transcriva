@@ -18,10 +18,6 @@ from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship, Session
 
 from utils.audio_processor import process_input
-from core.transcriber import transcribe_all
-from core.summarizer import summarize, generate_title
-from core.extractor import extract_action_items, extract_key_decisions, extract_questions
-from core.rag_engine import build_rag_chain, ask_question
 
 load_dotenv()
 
@@ -610,6 +606,10 @@ state_lock = threading.Lock()
 
 def run_pipeline_thread(source, language, whisper_model, youtube_cookies_file, youtube_cookies_browser, source_type):
     global global_state
+    from core.transcriber import transcribe_all
+    from core.summarizer import summarize, generate_title
+    from core.extractor import extract_action_items, extract_key_decisions, extract_questions
+    from core.rag_engine import build_rag_chain
 
     def update_step(key, state):
         with state_lock:
@@ -734,6 +734,7 @@ async def get_status():
 
 @app.post("/api/chat")
 async def chat(payload: ChatPayload):
+    from core.rag_engine import ask_question
     if not global_state["rag_chain"]:
         raise HTTPException(status_code=400, detail="RAG chain not initialized.")
     try:
