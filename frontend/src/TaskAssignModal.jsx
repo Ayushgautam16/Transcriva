@@ -4,10 +4,10 @@ import { X, Send, Loader2, CheckCircle } from 'lucide-react';
 const PRIORITIES = ['high', 'medium', 'low'];
 
 const FALLBACK_USERS = [
-  { username: 'ayush',  display_name: 'Ayush',  avatar: '🧑‍💻', role: 'admin' },
+  { username: 'ayush', display_name: 'Ayush', avatar: '🧑‍💻', role: 'admin' },
   { username: 'anujha', display_name: 'Anujha', avatar: '👩‍💼', role: 'member' },
-  { username: 'maria',  display_name: 'Maria',  avatar: '👩‍🔬', role: 'member' },
-  { username: 'rahul',  display_name: 'Rahul',  avatar: '👨‍💼', role: 'member' },
+  { username: 'maria', display_name: 'Maria', avatar: '👩‍🔬', role: 'member' },
+  { username: 'rahul', display_name: 'Rahul', avatar: '👨‍💼', role: 'member' },
 ];
 
 function getUserLabel(user) {
@@ -29,24 +29,92 @@ function mergeUsers(fetchedUsers) {
   FALLBACK_USERS.forEach(user => byUsername.set(user.username, user));
   (Array.isArray(fetchedUsers) ? fetchedUsers : []).forEach(user => {
     const normalized = normalizeUser(user);
-    if (normalized?.username) byUsername.set(normalized.username, { ...byUsername.get(normalized.username), ...normalized });
+    if (normalized?.username) {
+      byUsername.set(normalized.username, { ...byUsername.get(normalized.username), ...normalized });
+    }
   });
   return Array.from(byUsername.values());
 }
 
-// Parse raw action_items string into individual task lines safely
+function normalizeName(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function resolveAssignee(assigneeHint, users) {
+  if (!assigneeHint || !Array.isArray(users) || users.length === 0) return '';
+
+  const normalizedHint = normalizeName(assigneeHint);
+  if (!normalizedHint) return '';
+
+  const exact = users.find(u =>
+    normalizeName(u.username) === normalizedHint ||
+    normalizeName(u.display_name) === normalizedHint
+  );
+  if (exact) return exact.username;
+
+  const hintFirstToken = normalizedHint.split(' ')[0];
+  const partial = users.find(u => {
+    const dn = normalizeName(u.display_name);
+    const un = normalizeName(u.username);
+    return dn.startsWith(normalizedHint) ||
+      un.startsWith(normalizedHint) ||
+      (hintFirstToken && (dn.split(' ')[0] === hintFirstToken || un.split(' ')[0] === hintFirstToken));
+  });
+  return partial?.username || '';
+}
+
+// Parse raw action_items into structured tasks with optional assignee hints.
 function parseActionItems(raw) {
   if (typeof raw !== 'string') return [];
-  return raw
-    .split('\n')
-    .map(l => l.replace(/^[-•*\d.)\s]+/, '').trim())
-    .filter(l => l.length > 5);
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const items = [];
+  let current = null;
+
+  const pushCurrent = () => {
+    if (!current) return;
+    const title = (current.title || '').trim();
+    if (title.length > 5) {
+      items.push({ title, assigneeHint: (current.assigneeHint || '').trim() });
+    }
+    current = null;
+  };
+
+  for (const line of lines) {
+    const numberedTask = line.match(/^\d+[.)]\s*(.+)$/);
+    if (numberedTask) {
+      pushCurrent();
+      current = { title: numberedTask[1].trim(), assigneeHint: '' };
+      continue;
+    }
+
+    const assigneeLine = line.match(/^[-•*]?\s*(person(?:\s*\d+)?|assignee|owner)\s*:\s*(.+)$/i);
+    if (assigneeLine && current) {
+      current.assigneeHint = assigneeLine[2].trim();
+      continue;
+    }
+
+    if (/^[-•*]?\s*deadline\s*:/i.test(line)) {
+      continue;
+    }
+
+    if (!current) current = { title: '', assigneeHint: '' };
+    const clean = line.replace(/^[-•*]\s*/, '').trim();
+    if (clean && !/^(person|assignee|owner|deadline)\s*:/i.test(clean)) {
+      current.title = current.title ? `${current.title} ${clean}` : clean;
+    }
+  }
+
+  pushCurrent();
+  return items;
 }
 
 function TaskRow({ item, index, users, onUpdate }) {
   const [localTitle, setLocalTitle] = useState(item.title);
 
-  // Sync local title with props if props title changes from outside
   useEffect(() => {
     setLocalTitle(item.title);
   }, [item.title]);
@@ -63,7 +131,6 @@ function TaskRow({ item, index, users, onUpdate }) {
           placeholder="Task description"
         />
         <div className="tam-row-controls">
-          {/* Assignee */}
           <select
             className="tam-select"
             value={item.assigned_to}
@@ -77,7 +144,6 @@ function TaskRow({ item, index, users, onUpdate }) {
             ))}
           </select>
 
-          {/* Priority */}
           <select
             className="tam-select tam-priority"
             value={item.priority}
@@ -89,7 +155,6 @@ function TaskRow({ item, index, users, onUpdate }) {
             ))}
           </select>
 
-          {/* Due date */}
           <input
             className="tam-select"
             type="date"
@@ -99,7 +164,6 @@ function TaskRow({ item, index, users, onUpdate }) {
         </div>
       </div>
 
-      {/* Assigned badge */}
       {item.assigned && (
         <div className="tam-assigned-badge">
           <CheckCircle size={15} color="#7AC47A" />
@@ -110,37 +174,48 @@ function TaskRow({ item, index, users, onUpdate }) {
 }
 
 export default function TaskAssignModal({ result, token, currentUser, onClose }) {
-  const [users,   setUsers]   = useState([]);
-  const [items,   setItems]   = useState([]);
-  const [saving,  setSaving]  = useState(false);
-  const [done,    setDone]    = useState(false);
+  const [users, setUsers] = useState([]);
+  const [items, setItems] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
   const [summary, setSummary] = useState({ sent: 0, skipped: 0 });
 
   useEffect(() => {
-    // Load team members safely checking response status
-    fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => {
-        if (r.ok) return r.json();
-        throw new Error('Failed to load users');
-      })
-      .then(data => {
-        if (Array.isArray(data)) setUsers(mergeUsers(data));
-        else setUsers(FALLBACK_USERS);
-      })
-      .catch((err) => {
-        console.error(err);
-        setUsers(FALLBACK_USERS);
-      });
+    let cancelled = false;
 
-    // Pre-parse action items from meeting result
-    const parsed = parseActionItems(result?.action_items || '');
-    setItems(parsed.map(title => ({
-      title,
-      assigned_to: '',
-      priority: 'medium',
-      due_date: '',
-      assigned: false,
-    })));
+    const init = async () => {
+      const parsed = parseActionItems(result?.action_items || '');
+      try {
+        const response = await fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } });
+        if (!response.ok) throw new Error('Failed to load users');
+        const data = await response.json();
+        const memberList = mergeUsers(data);
+
+        if (cancelled) return;
+        setUsers(memberList);
+        setItems(parsed.map(item => ({
+          title: item.title,
+          assigned_to: resolveAssignee(item.assigneeHint, memberList),
+          priority: 'medium',
+          due_date: '',
+          assigned: false,
+        })));
+      } catch (err) {
+        console.error(err);
+        if (cancelled) return;
+        setUsers(FALLBACK_USERS);
+        setItems(parsed.map(item => ({
+          title: item.title,
+          assigned_to: resolveAssignee(item.assigneeHint, FALLBACK_USERS),
+          priority: 'medium',
+          due_date: '',
+          assigned: false,
+        })));
+      }
+    };
+
+    init();
+    return () => { cancelled = true; };
   }, [result, token]);
 
   const updateItem = (idx, field, value) => {
@@ -154,21 +229,21 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
       return;
     }
     setSaving(true);
-    let sent = 0, skipped = items.length - toSend.length;
+    let sent = 0;
+    const skipped = items.length - toSend.length;
 
-    // Execute all assignments in parallel to prevent UI blocking/network lag
     const promises = toSend.map(async (it) => {
       try {
         const res = await fetch('/api/tasks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({
-            title:         it.title,
-            description:   `From meeting: "${result?.title || 'Untitled'}"`,
-            assigned_to:   it.assigned_to,
+            title: it.title,
+            description: `From meeting: "${result?.title || 'Untitled'}"`,
+            assigned_to: it.assigned_to,
             meeting_title: result?.title || '',
-            due_date:      it.due_date || null,
-            priority:      it.priority,
+            due_date: it.due_date || null,
+            priority: it.priority,
           }),
         });
         if (res.ok) {
@@ -182,8 +257,7 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
     const results = await Promise.all(promises);
     const successfulTitles = results.filter(title => title !== null);
 
-    // Update items state exactly once to eliminate multiple intermediate re-renders
-    setItems(prev => prev.map(p => 
+    setItems(prev => prev.map(p =>
       successfulTitles.includes(p.title) ? { ...p, assigned: true } : p
     ));
 
@@ -197,8 +271,6 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
   return (
     <div className="modal-overlay">
       <div className="modal-panel">
-
-        {/* Header */}
         <div className="modal-header">
           <div>
             <div className="modal-title">🎯 Assign Meeting Tasks</div>
@@ -209,16 +281,14 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
 
         {!done ? (
           <>
-            {/* Subheader */}
             <div className="modal-subheader">
               <span>
-                {items.length} action item{items.length !== 1 ? 's' : ''} extracted · 
+                {items.length} action item{items.length !== 1 ? 's' : ''} extracted ·
                 <strong style={{ color: 'var(--warm-amber)' }}> {assignedCount} assigned</strong>
               </span>
               <span className="modal-hint">Set assignee → priority → due date, then click Assign</span>
             </div>
 
-            {/* Task rows */}
             <div className="modal-task-list">
               {items.length === 0 ? (
                 <div className="modal-empty">
@@ -238,7 +308,6 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
               )}
             </div>
 
-            {/* Footer */}
             <div className="modal-footer">
               <button className="modal-cancel-btn" onClick={onClose}>Cancel</button>
               <button
@@ -253,7 +322,6 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
             </div>
           </>
         ) : (
-          /* Success state */
           <div className="modal-success">
             <div className="modal-success-icon">🎉</div>
             <div className="modal-success-title">Tasks Assigned!</div>
