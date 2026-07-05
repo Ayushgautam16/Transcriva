@@ -27,6 +27,13 @@ const COLUMN_HEADERS = {
   done:        { emoji: '✅', title: 'Completed',   gradient: 'linear-gradient(135deg, rgba(122,196,122,0.08), rgba(122,196,122,0.03))' },
 };
 
+const FALLBACK_USERS = [
+  { username: 'ayush',  display_name: 'Ayush',  avatar: '🧑‍💻', role: 'admin' },
+  { username: 'anujha', display_name: 'Anujha', avatar: '👩‍💼', role: 'member' },
+  { username: 'maria',  display_name: 'Maria',  avatar: '👩‍🔬', role: 'member' },
+  { username: 'rahul',  display_name: 'Rahul',  avatar: '👨‍💼', role: 'member' },
+];
+
 function getUserLabel(user) {
   if (!user) return 'Unknown user';
   const name = user.display_name || user.display || user.name || user.username || 'Unknown user';
@@ -39,6 +46,16 @@ function normalizeUser(user) {
     ...user,
     display_name: user.display_name || user.display || user.name || user.username || 'Unknown user',
   };
+}
+
+function mergeUsers(fetchedUsers) {
+  const byUsername = new Map();
+  FALLBACK_USERS.forEach(user => byUsername.set(user.username, user));
+  (Array.isArray(fetchedUsers) ? fetchedUsers : []).forEach(user => {
+    const normalized = normalizeUser(user);
+    if (normalized?.username) byUsername.set(normalized.username, { ...byUsername.get(normalized.username), ...normalized });
+  });
+  return Array.from(byUsername.values());
 }
 
 /* ── Animated counter hook ── */
@@ -358,7 +375,10 @@ export default function TaskManagementPage({ token, currentUser, onBack }) {
       }
       if (uRes.ok) {
         const data = await uRes.json();
-        if (Array.isArray(data)) setUsers(data.map(normalizeUser));
+        if (Array.isArray(data)) setUsers(mergeUsers(data));
+        else setUsers(FALLBACK_USERS);
+      } else {
+        setUsers(FALLBACK_USERS);
       }
       if (dRes.ok) {
         const data = await dRes.json();

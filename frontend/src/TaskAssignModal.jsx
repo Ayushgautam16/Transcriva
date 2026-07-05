@@ -3,10 +3,35 @@ import { X, Send, Loader2, CheckCircle } from 'lucide-react';
 
 const PRIORITIES = ['high', 'medium', 'low'];
 
+const FALLBACK_USERS = [
+  { username: 'ayush',  display_name: 'Ayush',  avatar: '🧑‍💻', role: 'admin' },
+  { username: 'anujha', display_name: 'Anujha', avatar: '👩‍💼', role: 'member' },
+  { username: 'maria',  display_name: 'Maria',  avatar: '👩‍🔬', role: 'member' },
+  { username: 'rahul',  display_name: 'Rahul',  avatar: '👨‍💼', role: 'member' },
+];
+
 function getUserLabel(user) {
   if (!user) return 'Unknown user';
   const name = user.display_name || user.display || user.name || user.username || 'Unknown user';
   return user.username ? `${name} (@${user.username})` : name;
+}
+
+function normalizeUser(user) {
+  if (!user || typeof user !== 'object') return user;
+  return {
+    ...user,
+    display_name: user.display_name || user.display || user.name || user.username || 'Unknown user',
+  };
+}
+
+function mergeUsers(fetchedUsers) {
+  const byUsername = new Map();
+  FALLBACK_USERS.forEach(user => byUsername.set(user.username, user));
+  (Array.isArray(fetchedUsers) ? fetchedUsers : []).forEach(user => {
+    const normalized = normalizeUser(user);
+    if (normalized?.username) byUsername.set(normalized.username, { ...byUsername.get(normalized.username), ...normalized });
+  });
+  return Array.from(byUsername.values());
 }
 
 // Parse raw action_items string into individual task lines safely
@@ -99,10 +124,12 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
         throw new Error('Failed to load users');
       })
       .then(data => {
-        if (Array.isArray(data)) setUsers(data);
+        if (Array.isArray(data)) setUsers(mergeUsers(data));
+        else setUsers(FALLBACK_USERS);
       })
       .catch((err) => {
         console.error(err);
+        setUsers(FALLBACK_USERS);
       });
 
     // Pre-parse action items from meeting result
