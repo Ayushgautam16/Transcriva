@@ -23,8 +23,7 @@ function TaskCard({ task, token, users, onUpdate, onDelete, currentUser }) {
   const StatusIcon = sm.icon;
 
   const assignee = users.find(u => u.username === task.assigned_to);
-  const assigner = users.find(u => u.username === task.assigned_by);
-  const canDelete = currentUser.role === 'admin' || currentUser.username === task.assigned_by;
+  const canDelete = currentUser.role === 'admin';
 
   const cycleStatus = async () => {
     const cycle = { pending: 'in_progress', in_progress: 'done', done: 'pending' };

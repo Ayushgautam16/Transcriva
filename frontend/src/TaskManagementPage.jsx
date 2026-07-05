@@ -210,8 +210,7 @@ function KanbanCard({ task, users, token, currentUser, onUpdate, onDelete }) {
   const sm = STATUS_META[task.status] || STATUS_META.pending;
   const StatusIcon = sm.icon;
   const assignee = users.find(u => u.username === task.assigned_to);
-  const assigner = users.find(u => u.username === task.assigned_by);
-  const canModify = currentUser.role === 'admin' || currentUser.username === task.assigned_by;
+  const canModify = currentUser.role === 'admin';
 
   const cycleStatus = async () => {
     const cycle = { pending: 'in_progress', in_progress: 'done', done: 'pending' };
@@ -569,7 +568,9 @@ export default function TaskManagementPage({ token, currentUser, onBack }) {
           </div>
         </div>
         <div className="tm-header-right">
-          <CreateTaskForm users={users} token={token} currentUser={currentUser} onCreated={handleCreated} />
+          {currentUser.role === 'admin' && (
+            <CreateTaskForm users={users} token={token} currentUser={currentUser} onCreated={handleCreated} />
+          )}
           <button className="tm-refresh-btn" onClick={() => fetchAll(true)} disabled={refreshing}
                   title="Refresh">
             <RefreshCw size={14} style={refreshing ? { animation: 'spin 0.8s linear infinite' } : {}} />
