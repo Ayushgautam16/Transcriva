@@ -27,6 +27,20 @@ const COLUMN_HEADERS = {
   done:        { emoji: '✅', title: 'Completed',   gradient: 'linear-gradient(135deg, rgba(122,196,122,0.08), rgba(122,196,122,0.03))' },
 };
 
+function getUserLabel(user) {
+  if (!user) return 'Unknown user';
+  const name = user.display_name || user.display || user.name || user.username || 'Unknown user';
+  return user.username ? `${name} (@${user.username})` : name;
+}
+
+function normalizeUser(user) {
+  if (!user || typeof user !== 'object') return user;
+  return {
+    ...user,
+    display_name: user.display_name || user.display || user.name || user.username || 'Unknown user',
+  };
+}
+
 /* ── Animated counter hook ── */
 function useAnimatedCount(target, duration = 600) {
   const [count, setCount] = useState(0);
@@ -143,8 +157,8 @@ function KanbanCard({ task, users, token, currentUser, onUpdate, onDelete }) {
 
       {/* Meta row */}
       <div className="tm-kc-meta">
-        <span className="tm-kc-assignee" title={`Assigned to ${assignee?.display_name || task.assigned_to}`}>
-          {assignee?.avatar || '👤'} {assignee?.display_name || task.assigned_to}
+        <span className="tm-kc-assignee" title={`Assigned to ${getUserLabel(assignee)}`}>
+          {assignee?.avatar || '👤'} {getUserLabel(assignee)}
         </span>
         {task.due_date && (
           <span className="tm-kc-due">📅 {task.due_date}</span>
@@ -344,7 +358,7 @@ export default function TaskManagementPage({ token, currentUser, onBack }) {
       }
       if (uRes.ok) {
         const data = await uRes.json();
-        if (Array.isArray(data)) setUsers(data);
+        if (Array.isArray(data)) setUsers(data.map(normalizeUser));
       }
       if (dRes.ok) {
         const data = await dRes.json();
@@ -463,7 +477,7 @@ export default function TaskManagementPage({ token, currentUser, onBack }) {
                   onChange={e => setFilterUser(e.target.value)}>
             <option value="all">All Members</option>
             {users.map(u => (
-              <option key={u.username} value={u.username}>{u.avatar} {u.display_name}</option>
+              <option key={u.username} value={u.username}>{u.avatar} {getUserLabel(u)}</option>
             ))}
           </select>
         </div>
