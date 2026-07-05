@@ -26,5 +26,12 @@
     "avatar": "👨‍💼",
     "role": "member",
     "password_hash": "0908b290ec05501e268c59bf9c4bcfb6:fdbac21f0deac14782f116793b80fe96936b1dfbba1b9c9e969cf3379557d641"
+  },
+  "ayushgautam2007.kg@gmail.com": {
+    "username": "ayushgautam2007.kg@gmail.com",
+    "display_name": "anmol",
+    "avatar": "👨‍💼",
+    "role": "admin",
+    "password_hash": "c140802f497ad9a77f29397261b3a940:1a84a741de3032105382837b24f4c3641df2e60cba863d08c9cb0cc1b5ab1f8f"
   }
 }

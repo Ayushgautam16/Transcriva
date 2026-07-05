@@ -304,7 +304,7 @@ export default function App() {
       )}
 
       {/* Task Assign modal */}
-      {showTaskModal && result && (
+      {showTaskModal && result && currentUser.role === 'admin' && (
         <TaskAssignModal
           result={result}
           token={token}
@@ -567,10 +567,12 @@ export default function App() {
                   </button>
                 ))}
               </div>
-              <button className="assign-tasks-btn" onClick={() => setShowTaskModal(true)}>
-                <ClipboardList size={13} />
-                Assign Tasks
-              </button>
+              {currentUser.role === 'admin' && (
+                <button className="assign-tasks-btn" onClick={() => setShowTaskModal(true)}>
+                  <ClipboardList size={13} />
+                  Assign Tasks
+                </button>
+              )}
             </div>
           )}
         </div>
