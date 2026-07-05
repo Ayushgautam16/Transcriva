@@ -34,6 +34,116 @@ const FALLBACK_USERS = [
   { username: 'rahul',  display_name: 'Rahul',  avatar: '👨‍💼', role: 'member' },
 ];
 
+/* ── Local Storage Task Helpers ── */
+const LOCAL_STORAGE_KEY = 'transcriva_tasks';
+
+const SEED_TASKS = [
+  {
+    id: 'task_1',
+    title: 'Review project architecture and design document',
+    description: 'Ensure the new summary and transcription workflow aligns with requirements.',
+    priority: 'high',
+    status: 'in_progress',
+    due_date: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+    assigned_to: 'ayush',
+    assigned_by: 'ayush',
+    meeting_title: 'Project Kickoff Meeting',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'task_2',
+    title: 'Integrate Mistral API key validation in settings',
+    description: 'Add error handling for invalid keys in the frontend and backend.',
+    priority: 'high',
+    status: 'pending',
+    due_date: new Date(Date.now() + 86400000 * 3).toISOString().split('T')[0],
+    assigned_to: 'anujha',
+    assigned_by: 'ayush',
+    meeting_title: 'API Integration Sync',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'task_3',
+    title: 'Design CSS styles for mobile responsive view',
+    description: 'Make sure the dashboard and kanban cards look premium on mobile devices.',
+    priority: 'medium',
+    status: 'done',
+    due_date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+    assigned_to: 'maria',
+    assigned_by: 'ayush',
+    meeting_title: 'UI Design Review',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'task_4',
+    title: 'Prepare demo walkthrough recording',
+    description: 'Create a video showcasing the transcription, RAG chat, and task assignment.',
+    priority: 'low',
+    status: 'pending',
+    due_date: new Date(Date.now() + 86400000 * 5).toISOString().split('T')[0],
+    assigned_to: 'rahul',
+    assigned_by: 'ayush',
+    meeting_title: 'Marketing Alignment',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+
+export function getLocalTasks() {
+  const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+  if (!data) {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(SEED_TASKS));
+    return SEED_TASKS;
+  }
+  try {
+    return JSON.parse(data);
+  } catch (e) {
+    return SEED_TASKS;
+  }
+}
+
+export function saveLocalTasks(tasks) {
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(tasks));
+}
+
+export function getLocalDashboard(tasks, users) {
+  const pendingCount = tasks.filter(t => t.status === 'pending').length;
+  const progressCount = tasks.filter(t => t.status === 'in_progress').length;
+  const doneCount = tasks.filter(t => t.status === 'done').length;
+  const highCount = tasks.filter(t => t.priority === 'high').length;
+  const mediumCount = tasks.filter(t => t.priority === 'medium').length;
+  const lowCount = tasks.filter(t => t.priority === 'low').length;
+
+  const userStats = users.map(u => {
+    const uTasks = tasks.filter(t => t.assigned_to === u.username);
+    return {
+      username: u.username,
+      display_name: u.display_name,
+      avatar: u.avatar,
+      role: u.role,
+      total: uTasks.length,
+      pending: uTasks.filter(t => t.status === 'pending').length,
+      in_progress: uTasks.filter(t => t.status === 'in_progress').length,
+      done: uTasks.filter(t => t.status === 'done').length,
+    };
+  });
+
+  return {
+    total_tasks: tasks.length,
+    total_users: users.length,
+    pending_tasks: pendingCount,
+    in_progress_tasks: progressCount,
+    done_tasks: doneCount,
+    high_priority: highCount,
+    medium_priority: mediumCount,
+    low_priority: lowCount,
+    user_stats: userStats,
+  };
+}
+
 function getUserLabel(user) {
   if (!user) return 'Unknown user';
   const name = user.display_name || user.display || user.name || user.username || 'Unknown user';
@@ -108,12 +218,16 @@ function KanbanCard({ task, users, token, currentUser, onUpdate, onDelete }) {
     const next = cycle[task.status] || 'pending';
     setUpdating(true);
     try {
-      const res = await fetch(`/api/tasks/${task.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status: next }),
+      const localTasks = getLocalTasks();
+      const updatedTasks = localTasks.map(t => {
+        if (t.id === task.id) {
+          return { ...t, status: next, updated_at: new Date().toISOString() };
+        }
+        return t;
       });
-      if (res.ok) onUpdate(await res.json());
+      saveLocalTasks(updatedTasks);
+      const updatedTask = updatedTasks.find(t => t.id === task.id);
+      onUpdate(updatedTask);
     } finally { setUpdating(false); }
   };
 
@@ -121,28 +235,27 @@ function KanbanCard({ task, users, token, currentUser, onUpdate, onDelete }) {
     if (!newAssignee) return;
     setUpdating(true);
     try {
-      const res = await fetch(`/api/tasks/${task.id}/assign`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ assigned_to: newAssignee }),
+      const localTasks = getLocalTasks();
+      const updatedTasks = localTasks.map(t => {
+        if (t.id === task.id) {
+          return { ...t, assigned_to: newAssignee, updated_at: new Date().toISOString() };
+        }
+        return t;
       });
-      if (res.ok) {
-        onUpdate(await res.json());
-        setReassigning(false);
-        setNewAssignee('');
-      }
+      saveLocalTasks(updatedTasks);
+      const updatedTask = updatedTasks.find(t => t.id === task.id);
+      onUpdate(updatedTask);
+      setReassigning(false);
+      setNewAssignee('');
     } finally { setUpdating(false); }
   };
 
   const handleDelete = async () => {
     if (!window.confirm('Delete this task?')) return;
-    try {
-      await fetch(`/api/tasks/${task.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      onDelete(task.id);
-    } catch {}
+    const localTasks = getLocalTasks();
+    const filteredTasks = localTasks.filter(t => t.id !== task.id);
+    saveLocalTasks(filteredTasks);
+    onDelete(task.id);
   };
 
   return (
@@ -247,24 +360,24 @@ function CreateTaskForm({ users, token, currentUser, onCreated }) {
     if (!title.trim() || !assignedTo) return;
     setSaving(true);
     try {
-      const res = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          assigned_to: assignedTo,
-          meeting_title: '',
-          due_date: dueDate || null,
-          priority,
-        }),
-      });
-      if (res.ok) {
-        const newTask = await res.json();
-        onCreated(newTask);
-        setTitle(''); setDescription(''); setAssignedTo(''); setPriority('medium'); setDueDate('');
-        setOpen(false);
-      }
+      const newTask = {
+        id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        title: title.trim(),
+        description: description.trim(),
+        assigned_to: assignedTo,
+        assigned_by: currentUser.username,
+        meeting_title: '',
+        due_date: dueDate || null,
+        priority,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      const localTasks = getLocalTasks();
+      saveLocalTasks([newTask, ...localTasks]);
+      onCreated(newTask);
+      setTitle(''); setDescription(''); setAssignedTo(''); setPriority('medium'); setDueDate('');
+      setOpen(false);
     } finally { setSaving(false); }
   };
 
@@ -364,26 +477,25 @@ export default function TaskManagementPage({ token, currentUser, onBack }) {
   const fetchAll = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     try {
-      const [tRes, uRes, dRes] = await Promise.all([
-        fetch('/api/tasks',           { headers: authHeaders }),
-        fetch('/api/users',           { headers: authHeaders }),
-        fetch('/api/tasks/dashboard', { headers: authHeaders }),
-      ]);
-      if (tRes.ok) {
-        const data = await tRes.json();
-        if (Array.isArray(data)) setTasks(data);
+      let resolvedUsers = FALLBACK_USERS;
+      try {
+        const uRes = await fetch('/api/users', { headers: authHeaders });
+        if (uRes.ok) {
+          const data = await uRes.json();
+          if (Array.isArray(data)) {
+            resolvedUsers = mergeUsers(data);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch users, using fallback', e);
       }
-      if (uRes.ok) {
-        const data = await uRes.json();
-        if (Array.isArray(data)) setUsers(mergeUsers(data));
-        else setUsers(FALLBACK_USERS);
-      } else {
-        setUsers(FALLBACK_USERS);
-      }
-      if (dRes.ok) {
-        const data = await dRes.json();
-        if (data && typeof data === 'object' && !Array.isArray(data)) setDashboard(data);
-      }
+      setUsers(resolvedUsers);
+
+      const localTasks = getLocalTasks();
+      setTasks(localTasks);
+
+      const dashData = getLocalDashboard(localTasks, resolvedUsers);
+      setDashboard(dashData);
     } finally {
       setLoading(false);
       setRefreshing(false);

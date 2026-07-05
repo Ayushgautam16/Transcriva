@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Send, Loader2, CheckCircle } from 'lucide-react';
+import { getLocalTasks, saveLocalTasks } from './TaskManagementPage';
 
 const PRIORITIES = ['high', 'medium', 'low'];
 
@@ -232,38 +233,43 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
     let sent = 0;
     const skipped = items.length - toSend.length;
 
-    const promises = toSend.map(async (it) => {
-      try {
-        const res = await fetch('/api/tasks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            title: it.title,
-            description: `From meeting: "${result?.title || 'Untitled'}"`,
-            assigned_to: it.assigned_to,
-            meeting_title: result?.title || '',
-            due_date: it.due_date || null,
-            priority: it.priority,
-          }),
-        });
-        if (res.ok) {
-          sent++;
-          return it.title;
-        }
-      } catch {}
-      return null;
-    });
+    try {
+      const localTasks = getLocalTasks();
+      const newTasks = [];
 
-    const results = await Promise.all(promises);
-    const successfulTitles = results.filter(title => title !== null);
+      toSend.forEach((it, idx) => {
+        const newTask = {
+          id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${idx}`,
+          title: it.title,
+          description: `From meeting: "${result?.title || 'Untitled'}"`,
+          assigned_to: it.assigned_to,
+          assigned_by: currentUser.username,
+          meeting_title: result?.title || '',
+          due_date: it.due_date || null,
+          priority: it.priority,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        newTasks.push(newTask);
+        sent++;
+      });
 
-    setItems(prev => prev.map(p =>
-      successfulTitles.includes(p.title) ? { ...p, assigned: true } : p
-    ));
+      saveLocalTasks([...newTasks, ...localTasks]);
 
-    setSaving(false);
-    setSummary({ sent, skipped });
-    setDone(true);
+      const successfulTitles = toSend.map(it => it.title);
+      setItems(prev => prev.map(p =>
+        successfulTitles.includes(p.title) ? { ...p, assigned: true } : p
+      ));
+
+      setSummary({ sent, skipped });
+      setDone(true);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to assign tasks.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const assignedCount = items.filter(i => i.assigned_to).length;

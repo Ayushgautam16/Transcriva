@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, Clock, Circle, Trash2, ChevronDown, X, AlertCircle, Loader2 } from 'lucide-react';
+import { getLocalTasks, saveLocalTasks } from './TaskManagementPage';
 
 const PRIORITY_META = {
   high:   { label: 'High',   color: '#D85A30', bg: 'rgba(216,90,48,0.1)',   border: 'rgba(216,90,48,0.3)'  },
@@ -30,24 +31,25 @@ function TaskCard({ task, token, users, onUpdate, onDelete, currentUser }) {
     const next = cycle[task.status] || 'pending';
     setUpdating(true);
     try {
-      const res = await fetch(`/api/tasks/${task.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status: next }),
+      const localTasks = getLocalTasks();
+      const updatedTasks = localTasks.map(t => {
+        if (t.id === task.id) {
+          return { ...t, status: next, updated_at: new Date().toISOString() };
+        }
+        return t;
       });
-      if (res.ok) onUpdate(await res.json());
+      saveLocalTasks(updatedTasks);
+      const updatedTask = updatedTasks.find(t => t.id === task.id);
+      onUpdate(updatedTask);
     } finally { setUpdating(false); }
   };
 
   const handleDelete = async () => {
     if (!window.confirm('Delete this task?')) return;
-    try {
-      await fetch(`/api/tasks/${task.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      onDelete(task.id);
-    } catch {}
+    const localTasks = getLocalTasks();
+    const filteredTasks = localTasks.filter(t => t.id !== task.id);
+    saveLocalTasks(filteredTasks);
+    onDelete(task.id);
   };
 
   return (
@@ -121,18 +123,20 @@ export default function ProfilePage({ currentUser, token, onClose }) {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [tRes, uRes] = await Promise.all([
-        fetch('/api/tasks',  { headers: authHeaders }),
-        fetch('/api/users',  { headers: authHeaders }),
-      ]);
-      if (tRes.ok) {
-        const taskData = await tRes.json();
-        setTasks(Array.isArray(taskData) ? taskData : []);
+      let resolvedUsers = [];
+      try {
+        const uRes = await fetch('/api/users', { headers: authHeaders });
+        if (uRes.ok) {
+          const userData = await uRes.json();
+          resolvedUsers = Array.isArray(userData) ? userData : [];
+        }
+      } catch (e) {
+        console.error('Failed to load users in ProfilePage', e);
       }
-      if (uRes.ok) {
-        const userData = await uRes.json();
-        setUsers(Array.isArray(userData) ? userData : []);
-      }
+      setUsers(resolvedUsers);
+
+      const localTasks = getLocalTasks();
+      setTasks(localTasks);
     } finally { setLoading(false); }
   }, [token]);
 

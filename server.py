@@ -14,8 +14,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship, Session
+
 
 from utils.audio_processor import process_input
 
@@ -31,76 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ─── SQLAlchemy-backed task management database ───────────────────────────────
-DATABASE_URL = "sqlite:///./tasks.db"
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False}
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
 
-class DBUser(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, nullable=False)
-
-    tasks = relationship("DBTask", back_populates="user")
-
-class DBTask(Base):
-    __tablename__ = "tasks"
-
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)
-    description = Column(String)
-    priority = Column(String, default="medium")
-    status = Column(String, default="pending")
-    due_date = Column(String, nullable=True)
-    assigned_to = Column(String, nullable=True)
-    assigned_by = Column(String, nullable=True)
-    meeting_title = Column(String, nullable=True)
-    created_at = Column(String, nullable=True)
-    updated_at = Column(String, nullable=True)
-    assigned_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-
-    user = relationship("DBUser", back_populates="tasks")
-
-# Auto-migration: safely add missing columns if they do not exist
-if os.path.exists("tasks.db"):
-    try:
-        import sqlite3
-        conn = sqlite3.connect("tasks.db")
-        cursor = conn.cursor()
-        cursor.execute("PRAGMA table_info(tasks)")
-        columns = [row[1] for row in cursor.fetchall()]
-        
-        missing_columns = {
-            "assigned_to": "TEXT",
-            "assigned_by": "TEXT",
-            "meeting_title": "TEXT",
-            "created_at": "TEXT",
-            "updated_at": "TEXT"
-        }
-        
-        for col, col_type in missing_columns.items():
-            if col not in columns:
-                cursor.execute(f"ALTER TABLE tasks ADD COLUMN {col} {col_type}")
-                print(f"Added column {col} to tasks table")
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Migration error: {e}")
-
-Base.metadata.create_all(bind=engine)
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 # ─── Password Hashing (stdlib HMAC-SHA256 + salt) ─────────────────────────────
 def _hash_password(password: str) -> str:
@@ -118,7 +48,7 @@ def _verify_password(password: str, stored: str) -> bool:
 
 # ─── File-backed stores ───────────────────────────────────────────────────────
 USERS_FILE = "users_db.json"
-TASKS_FILE = "tasks_db.json"
+
 active_sessions: dict[str, str] = {}   # token → username
 
 def _load_json(path: str, default):
@@ -140,11 +70,7 @@ def _get_users() -> dict:
 def _save_users(users: dict):
     _save_json(USERS_FILE, users)
 
-def _get_tasks() -> list:
-    return _load_json(TASKS_FILE, [])
 
-def _save_tasks(tasks: list):
-    _save_json(TASKS_FILE, tasks)
 
 # ─── Seed demo users ──────────────────────────────────────────────────────────
 def _seed_users():
@@ -196,61 +122,12 @@ class RegisterPayload(BaseModel):
     avatar: str
     role: Optional[str] = "member"
 
-class TaskCreatePayload(BaseModel):
-    title: str
-    description: Optional[str] = ""
-    assigned_to: str
-    meeting_title: Optional[str] = ""
-    due_date: Optional[str] = None
-    priority: Optional[str] = "medium"
 
-class TaskUpdatePayload(BaseModel):
-    status: Optional[str] = None
-    title: Optional[str] = None
-    description: Optional[str] = None
-    priority: Optional[str] = None
-    due_date: Optional[str] = None
 
 class ChatPayload(BaseModel):
     question: str
 
-class DBUserCreate(BaseModel):
-    name: str
 
-class DBUserResponse(BaseModel):
-    id: int
-    name: str
-
-    class Config:
-        orm_mode = True
-
-class DBTaskCreate(BaseModel):
-    title: str
-    description: str
-    priority: str
-    due_date: str
-
-class DBAssignTask(BaseModel):
-    user_id: int
-
-class DBTaskUpdate(BaseModel):
-    title: str
-    description: str
-    priority: str
-    status: str
-    due_date: str
-
-class DBTaskResponse(BaseModel):
-    id: int
-    title: str
-    description: str
-    priority: str
-    status: str
-    due_date: str
-    assigned_user_id: int | None = None
-
-    class Config:
-        orm_mode = True
 
 # ─── Auth endpoints ───────────────────────────────────────────────────────────
 @app.post("/api/auth/register")
@@ -329,265 +206,7 @@ async def list_users(authorization: Optional[str] = Header(None)):
         for u in users.values()
     ]
 
-# ─── Task endpoints ───────────────────────────────────────────────────────────
-def _task_to_dict(task: DBTask) -> dict:
-    return {
-        "id": task.id,
-        "title": task.title,
-        "description": task.description or "",
-        "priority": task.priority or "medium",
-        "status": task.status or "pending",
-        "due_date": task.due_date or "",
-        "assigned_to": task.assigned_to or "",
-        "assigned_by": task.assigned_by or "",
-        "meeting_title": task.meeting_title or "",
-        "created_at": task.created_at or "",
-        "updated_at": task.updated_at or "",
-    }
 
-def _parse_task_id(task_id: str) -> int:
-    try:
-        return int(task_id)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Task not found")
-
-@app.get("/api/tasks")
-async def get_tasks(authorization: Optional[str] = Header(None)):
-    user = _get_current_user(authorization)
-    with SessionLocal() as db:
-        tasks = db.query(DBTask).all()
-    task_dicts = [_task_to_dict(t) for t in tasks]
-    if user["role"] == "admin":
-        return task_dicts
-    return [t for t in task_dicts if t["assigned_to"] == user["username"]]
-
-@app.post("/api/tasks")
-async def create_task(payload: TaskCreatePayload, authorization: Optional[str] = Header(None)):
-    user = _get_current_user(authorization)
-    users = _get_users()
-
-    if payload.assigned_to not in users:
-        raise HTTPException(status_code=400, detail=f"User '{payload.assigned_to}' not found")
-    task = DBTask(
-        title=payload.title,
-
-        description=payload.description or "",
-
-        assigned_to=payload.assigned_to,
-        
-        assigned_by=user["username"],
-        meeting_title=payload.meeting_title or "",
-        due_date=payload.due_date,
-        priority=payload.priority or "medium",
-        status="pending",
-
-        created_at=datetime.utcnow().isoformat(),
-        updated_at=datetime.utcnow().isoformat(),
-    )
-    with SessionLocal() as db:
-        db.add(task)
-        db.commit()
-        db.refresh(task)
-        return _task_to_dict(task)
-
-@app.patch("/api/tasks/{task_id}")
-async def update_task(task_id: str, payload: TaskUpdatePayload, authorization: Optional[str] = Header(None)):
-    user = _get_current_user(authorization)
-    task_db_id = _parse_task_id(task_id)
-    with SessionLocal() as db:
-        task = db.query(DBTask).filter(DBTask.id == task_db_id).first()
-        if not task:
-            raise HTTPException(status_code=404, detail="Task not found")
-        if task.assigned_to != user["username"] and user["role"] != "admin":
-            raise HTTPException(status_code=403, detail="Not authorised")
-        if payload.status is not None:
-            task.status = payload.status
-        if payload.title is not None:
-            task.title = payload.title
-        if payload.description is not None:
-            task.description = payload.description
-        if payload.priority is not None:
-            task.priority = payload.priority
-        if payload.due_date is not None:
-            task.due_date = payload.due_date
-        task.updated_at = datetime.utcnow().isoformat()
-        db.commit()
-        db.refresh(task)
-        return _task_to_dict(task)
-
-@app.delete("/api/tasks/{task_id}")
-async def delete_task(task_id: str, authorization: Optional[str] = Header(None)):
-    user = _get_current_user(authorization)
-    task_db_id = _parse_task_id(task_id)
-    with SessionLocal() as db:
-        task = db.query(DBTask).filter(DBTask.id == task_db_id).first()
-        if not task:
-            raise HTTPException(status_code=404, detail="Task not found")
-        if task.assigned_by != user["username"] and user["role"] != "admin":
-            raise HTTPException(status_code=403, detail="Not authorised")
-        db.delete(task)
-        db.commit()
-        return {"status": "deleted"}
-
-# ─── Task dashboard & filters ─────────────────────────────────────────────────
-@app.get("/api/tasks/dashboard")
-async def task_dashboard(authorization: Optional[str] = Header(None)):
-    user = _get_current_user(authorization)
-    with SessionLocal() as db:
-        tasks = db.query(DBTask).all()
-    users = _get_users()
-
-    task_dicts = [_task_to_dict(t) for t in tasks]
-
-    user_stats = []
-    for u in users.values():
-        u_tasks = [t for t in task_dicts if t["assigned_to"] == u["username"]]
-        user_stats.append({
-            "username":     u["username"],
-            "display_name": u["display_name"],
-            "avatar":       u["avatar"],
-            "role":         u["role"],
-            "total":        len(u_tasks),
-            "pending":      sum(1 for t in u_tasks if t["status"] == "pending"),
-            "in_progress":  sum(1 for t in u_tasks if t["status"] == "in_progress"),
-            "done":         sum(1 for t in u_tasks if t["status"] == "done"),
-        })
-
-    return {
-        "total_tasks":      len(task_dicts),
-        "total_users":      len(users),
-        "pending_tasks":    sum(1 for t in task_dicts if t["status"] == "pending"),
-        "in_progress_tasks": sum(1 for t in task_dicts if t["status"] == "in_progress"),
-        "done_tasks":       sum(1 for t in task_dicts if t["status"] == "done"),
-        "high_priority":    sum(1 for t in task_dicts if t.get("priority") == "high"),
-        "medium_priority":  sum(1 for t in task_dicts if t.get("priority") == "medium"),
-        "low_priority":     sum(1 for t in task_dicts if t.get("priority") == "low"),
-        "user_stats":       user_stats,
-    }
-
-@app.get("/api/tasks/status/{status}")
-async def tasks_by_status(status: str, authorization: Optional[str] = Header(None)):
-    user = _get_current_user(authorization)
-    with SessionLocal() as db:
-        tasks = db.query(DBTask).filter(DBTask.status == status).all()
-    task_dicts = [_task_to_dict(t) for t in tasks]
-    if user["role"] != "admin":
-        task_dicts = [t for t in task_dicts if t["assigned_to"] == user["username"]]
-    return task_dicts
-
-@app.get("/api/tasks/priority/{priority}")
-async def tasks_by_priority(priority: str, authorization: Optional[str] = Header(None)):
-    user = _get_current_user(authorization)
-    with SessionLocal() as db:
-        tasks = db.query(DBTask).filter(DBTask.priority == priority).all()
-    task_dicts = [_task_to_dict(t) for t in tasks]
-    if user["role"] != "admin":
-        task_dicts = [t for t in task_dicts if t["assigned_to"] == user["username"]]
-    return task_dicts
-
-class TaskReassignPayload(BaseModel):
-    assigned_to: str
-
-@app.patch("/api/tasks/{task_id}/assign")
-async def reassign_task(task_id: str, payload: TaskReassignPayload, authorization: Optional[str] = Header(None)):
-    user = _get_current_user(authorization)
-    users = _get_users()
-    if payload.assigned_to not in users:
-        raise HTTPException(status_code=400, detail=f"User '{payload.assigned_to}' not found")
-    task_db_id = _parse_task_id(task_id)
-    with SessionLocal() as db:
-        task = db.query(DBTask).filter(DBTask.id == task_db_id).first()
-        if not task:
-            raise HTTPException(status_code=404, detail="Task not found")
-        if task.assigned_by != user["username"] and user["role"] != "admin":
-            raise HTTPException(status_code=403, detail="Not authorised to reassign")
-        task.assigned_to = payload.assigned_to
-        task.updated_at = datetime.utcnow().isoformat()
-        db.commit()
-        db.refresh(task)
-        return _task_to_dict(task)
-
-# ─── SQLAlchemy-backed task management routes ───────────────────────────────────
-@app.post("/api/db/users", response_model=DBUserResponse)
-def db_create_user(user: DBUserCreate, db: Session = Depends(get_db)):
-    existing_user = db.query(DBUser).filter(DBUser.name == user.name).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="User already exists")
-    new_user = DBUser(name=user.name)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
-
-@app.get("/api/db/users", response_model=list[DBUserResponse])
-def db_get_users(db: Session = Depends(get_db)):
-    return db.query(DBUser).all()
-
-@app.post("/api/db/tasks", response_model=DBTaskResponse)
-def db_create_task(task: DBTaskCreate, db: Session = Depends(get_db)):
-    new_task = DBTask(
-        title=task.title,
-        description=task.description,
-        priority=task.priority,
-        due_date=task.due_date,
-    )
-    db.add(new_task)
-    db.commit()
-    db.refresh(new_task)
-    return new_task
-
-@app.get("/api/db/tasks", response_model=list[DBTaskResponse])
-def db_get_all_tasks(db: Session = Depends(get_db)):
-    return db.query(DBTask).all()
-
-@app.get("/api/db/tasks/{task_id}", response_model=DBTaskResponse)
-def db_get_task(task_id: int, db: Session = Depends(get_db)):
-    task = db.query(DBTask).filter(DBTask.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return task
-
-@app.patch("/api/db/tasks/{task_id}/assign")
-def db_assign_task(task_id: int, data: DBAssignTask, db: Session = Depends(get_db)):
-    task = db.query(DBTask).filter(DBTask.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    user = db.query(DBUser).filter(DBUser.id == data.user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    task.assigned_user_id = user.id
-    db.commit()
-    db.refresh(task)
-    return {
-        "message": f"Task assigned to {user.name}",
-        "task_id": task.id,
-        "assigned_user_id": user.id,
-    }
-
-@app.put("/api/db/tasks/{task_id}")
-def db_update_task(task_id: int, updated_task: DBTaskUpdate, db: Session = Depends(get_db)):
-    task = db.query(DBTask).filter(DBTask.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    task.title = updated_task.title
-    task.description = updated_task.description
-    task.priority = updated_task.priority
-    task.status = updated_task.status
-    task.due_date = updated_task.due_date
-    db.commit()
-    db.refresh(task)
-    return {"message": "Task updated successfully"}
-
-@app.get("/api/db/users/{user_id}/tasks")
-def db_get_tasks_by_user(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(DBUser).filter(DBUser.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    tasks = db.query(DBTask).filter(DBTask.assigned_user_id == user_id).all()
-    return {
-        "user": user.name,
-        "tasks": tasks,
-    }
 
 # ─── Meeting analysis state ───────────────────────────────────────────────────
 global_state = {
