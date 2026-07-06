@@ -319,8 +319,9 @@ async def analyze(
     if user_sarvam_key:  os.environ["SARVAM_API_KEY"]  = user_sarvam_key.strip()
 
     if not source.strip():
-        
+
         with state_lock: global_state["status"] = "idle"
+        
         raise HTTPException(status_code=400, detail="Please provide a valid input source.")
 
     if language == "hinglish" and not os.environ.get("SARVAM_API_KEY"):
