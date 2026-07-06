@@ -315,6 +315,7 @@ async def analyze(
             global_state["steps"][k] = "pending"
 
     if user_mistral_key: os.environ["MISTRAL_API_KEY"] = user_mistral_key.strip()
+    
     if user_sarvam_key:  os.environ["SARVAM_API_KEY"]  = user_sarvam_key.strip()
 
     if not source.strip():
