@@ -4,6 +4,7 @@ import uuid
 import secrets
 import hashlib
 import hmac
+import sqlite3
 import threading
 import traceback
 from datetime import datetime
@@ -46,10 +47,90 @@ def _verify_password(password: str, stored: str) -> bool:
     except Exception:
         return False
 
-# ─── File-backed stores ───────────────────────────────────────────────────────
-USERS_FILE = "users_db.json"
+# ─── SQLite stores ───────────────────────────────────────────────────────────
+USERS_FILE = "users_db.json"  # legacy migration source
+DB_FILE = "app_data.db"
 
 active_sessions: dict[str, str] = {}   # token → username
+
+
+def _get_conn() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def _init_db():
+    with _get_conn() as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                username TEXT PRIMARY KEY,
+                display_name TEXT NOT NULL,
+                avatar TEXT NOT NULL,
+                role TEXT NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tasks (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                description TEXT,
+                assigned_to TEXT NOT NULL,
+                assigned_by TEXT NOT NULL,
+                meeting_title TEXT,
+                due_date TEXT,
+                priority TEXT NOT NULL DEFAULT 'medium',
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (assigned_to) REFERENCES users(username),
+                FOREIGN KEY (assigned_by) REFERENCES users(username)
+            )
+            """
+        )
+        conn.commit()
+
+
+def _migrate_users_from_json_if_needed():
+    """One-time migration from legacy users_db.json into SQLite users table."""
+    if not os.path.exists(USERS_FILE):
+        return
+
+    try:
+        with _get_conn() as conn:
+            existing_count = conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"]
+            if existing_count > 0:
+                return
+
+        with open(USERS_FILE, "r", encoding="utf-8") as f:
+            users = json.load(f)
+
+        now = datetime.utcnow().isoformat()
+        with _get_conn() as conn:
+            for username, u in users.items():
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO users
+                    (username, display_name, avatar, role, password_hash, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        username,
+                        u.get("display_name") or username.capitalize(),
+                        u.get("avatar") or "👤",
+                        u.get("role") or "member",
+                        u.get("password_hash") or "",
+                        now,
+                    ),
+                )
+            conn.commit()
+    except Exception:
+        traceback.print_exc()
 
 def _load_json(path: str, default):
     if os.path.exists(path):
@@ -65,10 +146,42 @@ def _save_json(path: str, data):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 def _get_users() -> dict:
-    return _load_json(USERS_FILE, {})
+    with _get_conn() as conn:
+        rows = conn.execute(
+            "SELECT username, display_name, avatar, role, password_hash FROM users"
+        ).fetchall()
+    return {
+        r["username"]: {
+            "username": r["username"],
+            "display_name": r["display_name"],
+            "avatar": r["avatar"],
+            "role": r["role"],
+            "password_hash": r["password_hash"],
+        }
+        for r in rows
+    }
 
 def _save_users(users: dict):
-    _save_json(USERS_FILE, users)
+    now = datetime.utcnow().isoformat()
+    with _get_conn() as conn:
+        conn.execute("DELETE FROM users")
+        for username, u in users.items():
+            conn.execute(
+                """
+                INSERT INTO users
+                (username, display_name, avatar, role, password_hash, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    username,
+                    u.get("display_name") or username.capitalize(),
+                    u.get("avatar") or "👤",
+                    u.get("role") or "member",
+                    u.get("password_hash") or "",
+                    now,
+                ),
+            )
+        conn.commit()
 
 
 
@@ -95,6 +208,8 @@ def _seed_users():
     if changed:
         _save_users(users)
 
+_init_db()
+_migrate_users_from_json_if_needed()
 _seed_users()
 
 # ─── Auth helper ──────────────────────────────────────────────────────────────
@@ -126,6 +241,26 @@ class RegisterPayload(BaseModel):
 
 class ChatPayload(BaseModel):
     question: str
+
+
+class TaskCreatePayload(BaseModel):
+    title: str
+    description: Optional[str] = ""
+    assigned_to: str
+    assigned_by: Optional[str] = None
+    meeting_title: Optional[str] = ""
+    due_date: Optional[str] = None
+    priority: str = "medium"
+    status: str = "pending"
+
+
+class TaskUpdatePayload(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    assigned_to: Optional[str] = None
+    due_date: Optional[str] = None
+    priority: Optional[str] = None
+    status: Optional[str] = None
 
 
 
@@ -205,6 +340,122 @@ async def list_users(authorization: Optional[str] = Header(None)):
          "avatar": u["avatar"], "role": u["role"]}
         for u in users.values()
     ]
+
+
+# ─── Tasks endpoints (SQLite-backed) ─────────────────────────────────────────
+@app.get("/api/tasks")
+async def list_tasks(authorization: Optional[str] = Header(None)):
+    user = _get_current_user(authorization)
+    with _get_conn() as conn:
+        if user["role"] == "admin":
+            rows = conn.execute("SELECT * FROM tasks ORDER BY created_at DESC").fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM tasks WHERE assigned_to = ? ORDER BY created_at DESC",
+                (user["username"],),
+            ).fetchall()
+    return [dict(r) for r in rows]
+
+
+@app.post("/api/tasks")
+async def create_task(payload: TaskCreatePayload, authorization: Optional[str] = Header(None)):
+    user = _get_current_user(authorization)
+    assigned_by = payload.assigned_by or user["username"]
+
+    if user["role"] != "admin" and assigned_by != user["username"]:
+        raise HTTPException(status_code=403, detail="Only admin can assign tasks to others")
+
+    task_id = f"task_{uuid.uuid4().hex}"
+    now = datetime.utcnow().isoformat()
+    priority = payload.priority if payload.priority in {"high", "medium", "low"} else "medium"
+    status = payload.status if payload.status in {"pending", "in_progress", "done"} else "pending"
+
+    with _get_conn() as conn:
+        assignee = conn.execute(
+            "SELECT username FROM users WHERE username = ?",
+            (payload.assigned_to,),
+        ).fetchone()
+        if not assignee:
+            raise HTTPException(status_code=400, detail="Assigned user does not exist")
+
+        conn.execute(
+            """
+            INSERT INTO tasks
+            (id, title, description, assigned_to, assigned_by, meeting_title, due_date,
+             priority, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                task_id,
+                payload.title.strip(),
+                (payload.description or "").strip(),
+                payload.assigned_to,
+                assigned_by,
+                (payload.meeting_title or "").strip(),
+                payload.due_date,
+                priority,
+                status,
+                now,
+                now,
+            ),
+        )
+        conn.commit()
+
+        row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    return dict(row)
+
+
+@app.patch("/api/tasks/{task_id}")
+async def update_task(task_id: str, payload: TaskUpdatePayload, authorization: Optional[str] = Header(None)):
+    user = _get_current_user(authorization)
+    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No updates provided")
+
+    if "priority" in updates and updates["priority"] not in {"high", "medium", "low"}:
+        raise HTTPException(status_code=400, detail="Invalid priority")
+    if "status" in updates and updates["status"] not in {"pending", "in_progress", "done"}:
+        raise HTTPException(status_code=400, detail="Invalid status")
+
+    with _get_conn() as conn:
+        row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        if user["role"] != "admin" and row["assigned_to"] != user["username"]:
+            raise HTTPException(status_code=403, detail="Not allowed to update this task")
+
+        allowed_for_member = {"status"}
+        if user["role"] != "admin":
+            updates = {k: v for k, v in updates.items() if k in allowed_for_member}
+            if not updates:
+                raise HTTPException(status_code=403, detail="Members can only update task status")
+
+        updates["updated_at"] = datetime.utcnow().isoformat()
+        set_clause = ", ".join([f"{k} = ?" for k in updates.keys()])
+        params = list(updates.values()) + [task_id]
+
+        conn.execute(f"UPDATE tasks SET {set_clause} WHERE id = ?", params)
+        conn.commit()
+        updated = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+
+    return dict(updated)
+
+
+@app.delete("/api/tasks/{task_id}")
+async def delete_task(task_id: str, authorization: Optional[str] = Header(None)):
+    user = _get_current_user(authorization)
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can delete tasks")
+
+    with _get_conn() as conn:
+        row = conn.execute("SELECT id FROM tasks WHERE id = ?", (task_id,)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Task not found")
+        conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+        conn.commit()
+
+    return {"status": "deleted", "id": task_id}
 
 
 
