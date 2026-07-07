@@ -55,6 +55,7 @@ if __name__ == "__main__":
     result = run_pipeline(source, language, youtube_cookies_file, youtube_cookies_browser)
 
     print("\n" + "=" * 60)
+    
     print(f"📌 Title: {result['title']}")
     print(f"\n📋 Summary:\n{result['summary']}")
     print(f"\n✅ Action Items:\n{result['action_items']}")
