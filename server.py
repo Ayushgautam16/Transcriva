@@ -62,6 +62,20 @@ def _get_conn() -> sqlite3.Connection:
 
 def _init_db():
     with _get_conn() as conn:
+        try:
+            table_exists = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
+            ).fetchone()
+            if table_exists:
+                cursor = conn.execute("PRAGMA table_info(users)")
+                columns = [row["name"] for row in cursor.fetchall()]
+                if "username" not in columns:
+                    print("Warning: users table lacks 'username' column. Dropping it to recreate with correct schema.")
+                    conn.execute("DROP TABLE users")
+                    conn.commit()
+        except Exception as e:
+            print(f"Error checking users table columns: {e}")
+
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
