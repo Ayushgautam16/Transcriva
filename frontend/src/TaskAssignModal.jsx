@@ -234,7 +234,7 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
     const skipped = items.length - toSend.length;
 
     try {
-      const localTasks = getLocalTasks();
+      const localTasks = await getLocalTasks(token);
       const newTasks = [];
 
       toSend.forEach((it, idx) => {
@@ -255,7 +255,7 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
         sent++;
       });
 
-      saveLocalTasks([...newTasks, ...localTasks]);
+      await saveLocalTasks([...newTasks, ...localTasks], token, currentUser);
 
       const successfulTitles = toSend.map(it => it.title);
       setItems(prev => prev.map(p =>

@@ -23,6 +23,7 @@ function TaskCard({ task, token, users, onUpdate, onDelete, currentUser }) {
   const StatusIcon = sm.icon;
 
   const assignee = users.find(u => u.username === task.assigned_to);
+  const assigner = users.find(u => u.username === task.assigned_by);
   const canDelete = currentUser.role === 'admin';
 
   const cycleStatus = async () => {
@@ -30,14 +31,14 @@ function TaskCard({ task, token, users, onUpdate, onDelete, currentUser }) {
     const next = cycle[task.status] || 'pending';
     setUpdating(true);
     try {
-      const localTasks = getLocalTasks();
+      const localTasks = await getLocalTasks(token);
       const updatedTasks = localTasks.map(t => {
         if (t.id === task.id) {
           return { ...t, status: next, updated_at: new Date().toISOString() };
         }
         return t;
       });
-      saveLocalTasks(updatedTasks);
+      await saveLocalTasks(updatedTasks, token, currentUser);
       const updatedTask = updatedTasks.find(t => t.id === task.id);
       onUpdate(updatedTask);
     } finally { setUpdating(false); }
@@ -45,9 +46,9 @@ function TaskCard({ task, token, users, onUpdate, onDelete, currentUser }) {
 
   const handleDelete = async () => {
     if (!window.confirm('Delete this task?')) return;
-    const localTasks = getLocalTasks();
+    const localTasks = await getLocalTasks(token);
     const filteredTasks = localTasks.filter(t => t.id !== task.id);
-    saveLocalTasks(filteredTasks);
+    await saveLocalTasks(filteredTasks, token, currentUser);
     onDelete(task.id);
   };
 
@@ -134,7 +135,7 @@ export default function ProfilePage({ currentUser, token, onClose }) {
       }
       setUsers(resolvedUsers);
 
-      const localTasks = getLocalTasks();
+      const localTasks = await getLocalTasks(token);
       setTasks(localTasks);
     } finally { setLoading(false); }
   }, [token]);
