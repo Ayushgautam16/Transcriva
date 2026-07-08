@@ -268,6 +268,7 @@ function KanbanCard({ task, users, token, currentUser, onUpdate, onDelete }) {
   const sm = STATUS_META[task.status] || STATUS_META.pending;
   const StatusIcon = sm.icon;
   const assignee = users.find(u => u.username === task.assigned_to);
+  const assigner = users.find(u => u.username === task.assigned_by);
   const canModify = currentUser.role === 'admin';
 
   const cycleStatus = async () => {
