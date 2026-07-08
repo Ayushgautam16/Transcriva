@@ -34,8 +34,8 @@ const FALLBACK_USERS = [
   { username: 'rahul',  display_name: 'Rahul',  avatar: '👨‍💼', role: 'member' },
 ];
 
-/* ── Local Storage Task Helpers ── */
-const LOCAL_STORAGE_KEY = 'transcriva_tasks';
+/* ── SQL Task Helpers ── */
+const TASKS_API = '/api/tasks';
 
 const SEED_TASKS = [
   {
@@ -92,21 +92,79 @@ const SEED_TASKS = [
   }
 ];
 
-export function getLocalTasks() {
-  const data = localStorage.getItem(LOCAL_STORAGE_KEY);
-  if (!data) {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(SEED_TASKS));
-    return SEED_TASKS;
+async function requestJson(url, token, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Request failed with status ${response.status}`);
   }
-  try {
-    return JSON.parse(data);
-  } catch (e) {
-    return SEED_TASKS;
-  }
+
+  return response.status === 204 ? null : response.json();
 }
 
-export function saveLocalTasks(tasks) {
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(tasks));
+export async function getLocalTasks(token) {
+  return requestJson(TASKS_API, token);
+}
+
+function diffTask(existing, next) {
+  const fields = ['title', 'description', 'assigned_to', 'assigned_by', 'meeting_title', 'due_date', 'priority', 'status'];
+  const changed = {};
+  fields.forEach(field => {
+    if ((existing?.[field] ?? '') !== (next?.[field] ?? '')) {
+      changed[field] = next?.[field] ?? '';
+    }
+  });
+  return changed;
+}
+
+export async function saveLocalTasks(tasks, token, currentUser) {
+  const serverTasks = await getLocalTasks(token);
+  const serverById = new Map(serverTasks.map(task => [task.id, task]));
+  const desiredById = new Map(tasks.map(task => [task.id, task]));
+
+  for (const task of tasks) {
+    const existing = serverById.get(task.id);
+    if (!existing) {
+      await requestJson(TASKS_API, token, {
+        method: 'POST',
+        body: JSON.stringify({
+          title: task.title,
+          description: task.description || '',
+          assigned_to: task.assigned_to,
+          assigned_by: task.assigned_by || currentUser?.username,
+          meeting_title: task.meeting_title || '',
+          due_date: task.due_date || null,
+          priority: task.priority || 'medium',
+          status: task.status || 'pending',
+        }),
+      });
+      continue;
+    }
+
+    const changed = diffTask(existing, task);
+    if (Object.keys(changed).length > 0) {
+      await requestJson(`${TASKS_API}/${task.id}`, token, {
+        method: 'PATCH',
+        body: JSON.stringify(changed),
+      });
+    }
+  }
+
+  for (const task of serverTasks.filter(item => !desiredById.has(item.id))) {
+    await requestJson(`${TASKS_API}/${task.id}`, token, {
+      method: 'DELETE',
+    });
+  }
+
+  return getLocalTasks(token);
 }
 
 export function getLocalDashboard(tasks, users) {
@@ -217,14 +275,14 @@ function KanbanCard({ task, users, token, currentUser, onUpdate, onDelete }) {
     const next = cycle[task.status] || 'pending';
     setUpdating(true);
     try {
-      const localTasks = getLocalTasks();
+      const localTasks = await getLocalTasks(token);
       const updatedTasks = localTasks.map(t => {
         if (t.id === task.id) {
           return { ...t, status: next, updated_at: new Date().toISOString() };
         }
         return t;
       });
-      saveLocalTasks(updatedTasks);
+      await saveLocalTasks(updatedTasks, token, currentUser);
       const updatedTask = updatedTasks.find(t => t.id === task.id);
       onUpdate(updatedTask);
     } finally { setUpdating(false); }
@@ -234,14 +292,14 @@ function KanbanCard({ task, users, token, currentUser, onUpdate, onDelete }) {
     if (!newAssignee) return;
     setUpdating(true);
     try {
-      const localTasks = getLocalTasks();
+      const localTasks = await getLocalTasks(token);
       const updatedTasks = localTasks.map(t => {
         if (t.id === task.id) {
           return { ...t, assigned_to: newAssignee, updated_at: new Date().toISOString() };
         }
         return t;
       });
-      saveLocalTasks(updatedTasks);
+      await saveLocalTasks(updatedTasks, token, currentUser);
       const updatedTask = updatedTasks.find(t => t.id === task.id);
       onUpdate(updatedTask);
       setReassigning(false);
@@ -251,9 +309,9 @@ function KanbanCard({ task, users, token, currentUser, onUpdate, onDelete }) {
 
   const handleDelete = async () => {
     if (!window.confirm('Delete this task?')) return;
-    const localTasks = getLocalTasks();
+    const localTasks = await getLocalTasks(token);
     const filteredTasks = localTasks.filter(t => t.id !== task.id);
-    saveLocalTasks(filteredTasks);
+    await saveLocalTasks(filteredTasks, token, currentUser);
     onDelete(task.id);
   };
 
@@ -372,8 +430,8 @@ function CreateTaskForm({ users, token, currentUser, onCreated }) {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
-      const localTasks = getLocalTasks();
-      saveLocalTasks([newTask, ...localTasks]);
+      const localTasks = await getLocalTasks(token);
+      await saveLocalTasks([newTask, ...localTasks], token, currentUser);
       onCreated(newTask);
       setTitle(''); setDescription(''); setAssignedTo(''); setPriority('medium'); setDueDate('');
       setOpen(false);
@@ -490,7 +548,7 @@ export default function TaskManagementPage({ token, currentUser, onBack }) {
       }
       setUsers(resolvedUsers);
 
-      const localTasks = getLocalTasks();
+      const localTasks = await getLocalTasks(token);
       setTasks(localTasks);
 
       const dashData = getLocalDashboard(localTasks, resolvedUsers);

@@ -49,7 +49,7 @@ def _verify_password(password: str, stored: str) -> bool:
 
 # ─── SQLite stores ───────────────────────────────────────────────────────────
 USERS_FILE = "users_db.json"  # legacy migration source
-DB_FILE = "app_data.db"
+DB_FILE = "tasks.db"
 
 active_sessions: dict[str, str] = {}   # token → username
 
@@ -208,9 +208,84 @@ def _seed_users():
     if changed:
         _save_users(users)
 
+
+def _seed_tasks():
+    with _get_conn() as conn:
+        existing = conn.execute("SELECT COUNT(*) AS c FROM tasks").fetchone()["c"]
+        if existing > 0:
+            return
+
+        now = datetime.utcnow().isoformat()
+        seeds = [
+            (
+                "task_1",
+                "Review project architecture and design document",
+                "Ensure the new summary and transcription workflow aligns with requirements.",
+                "ayush",
+                "ayush",
+                "Project Kickoff Meeting",
+                (datetime.utcnow().date()).isoformat(),
+                "high",
+                "in_progress",
+                now,
+                now,
+            ),
+            (
+                "task_2",
+                "Integrate Mistral API key validation in settings",
+                "Add error handling for invalid keys in the frontend and backend.",
+                "anujha",
+                "ayush",
+                "API Integration Sync",
+                (datetime.utcnow().date()).isoformat(),
+                "high",
+                "pending",
+                now,
+                now,
+            ),
+            (
+                "task_3",
+                "Design CSS styles for mobile responsive view",
+                "Make sure the dashboard and kanban cards look premium on mobile devices.",
+                "maria",
+                "ayush",
+                "UI Design Review",
+                (datetime.utcnow().date()).isoformat(),
+                "medium",
+                "done",
+                now,
+                now,
+            ),
+            (
+                "task_4",
+                "Prepare demo walkthrough recording",
+                "Create a video showcasing the transcription, RAG chat, and task assignment.",
+                "rahul",
+                "ayush",
+                "Marketing Alignment",
+                (datetime.utcnow().date()).isoformat(),
+                "low",
+                "pending",
+                now,
+                now,
+            ),
+        ]
+
+        conn.executemany(
+            """
+            INSERT OR IGNORE INTO tasks
+            (id, title, description, assigned_to, assigned_by, meeting_title, due_date,
+             priority, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            seeds,
+        )
+        conn.commit()
+
 _init_db()
 _migrate_users_from_json_if_needed()
 _seed_users()
+_seed_tasks()
 
 # ─── Auth helper ──────────────────────────────────────────────────────────────
 def _get_current_user(authorization: Optional[str]) -> dict:
