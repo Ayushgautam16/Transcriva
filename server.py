@@ -76,6 +76,20 @@ def _init_db():
         except Exception as e:
             print(f"Error checking users table columns: {e}")
 
+        try:
+            tasks_table_exists = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='tasks'"
+            ).fetchone()
+            if tasks_table_exists:
+                cursor = conn.execute("PRAGMA table_info(tasks)")
+                columns = {row["name"]: row["type"] for row in cursor.fetchall()}
+                if "id" not in columns or columns.get("id", "").upper() != "TEXT":
+                    print("Warning: tasks table has incorrect schema or 'id' type. Dropping it to recreate with correct schema.")
+                    conn.execute("DROP TABLE tasks")
+                    conn.commit()
+        except Exception as e:
+            print(f"Error checking tasks table columns: {e}")
+
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
