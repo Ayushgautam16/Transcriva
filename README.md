@@ -1,6 +1,6 @@
 # Transcriva AI 🎬
 
-Transcriva AI is a state-of-the-art, private meeting intelligence dashboard. It processes video and audio meetings, transcribes content locally, extracts structured summaries, and provides an interactive Retrieval-Augmented Generation (RAG) chat assistant to query your meeting transcripts.
+Transcriva AI is a state-of-the-art, private meeting intelligence dashboard. It processes video and audio meetings, transcribes content locally, extracts structured summaries, and provides an interactive  Retrieval-Augmented Generation (RAG) chat assistant to query your meeting transcripts.
 
 Now powered by a high-performance **FastAPI backend** and a bespoke, responsive **Vite + React frontend**, the application features an asynchronous processing pipeline, live status tracking, and a gorgeous modern UI.
 
