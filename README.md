@@ -12,7 +12,8 @@ Now powered by a high-performance **FastAPI backend** and a bespoke, responsive 
 
 - **📊 Tabbed Dashboard**: Streamlined interface containing Overview (Executive Summary & Media Player), Key Insights, Full Transcript, and Chat Assistant.
 - **⚡ Asynchronous Pipeline**: Track each stage of the analysis process (Audio Processing → Transcription → Title Generation → Summarisation → Extraction → RAG Engine) in real-time via the sidebar timeline.
-- **📁 Multi-Source Input**: Supports YouTube video links, local files, and direct drag-and-drop audio/video uploads (`.mp3, .wav, .m4a, .mp4`).
+- **📁 Multi-Source Input**: Supports YouTube video links, local files, and direct drag-and-drop audio/video uploads
+ (`.mp3, .wav, .m4a, .mp4`).
 - **🚀 Whisper Speed Controls**: Choose local Whisper model sizes (`Tiny`, `Base`, `Small`, `Medium`) to speed up CPU transcription by up to 10x.
 - **🌐 Bilingual Transcribe**: Full support for English (via local Whisper) and Hinglish (Hindi + English via Sarvam AI API).
 - **📋 Structured Insights**: Instantly extracts Meeting Title, Executive Summary, Action Items, Key Decisions, and Open Questions.
