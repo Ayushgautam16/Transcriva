@@ -435,25 +435,27 @@ function CreateTaskForm({ users, token, currentUser, onCreated }) {
     if (!title.trim() || !assignedTo) return;
     setSaving(true);
     try {
-      const newTask = {
-        id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        title: title.trim(),
-        description: description.trim(),
-        assigned_to: assignedTo,
-        assigned_by: currentUser.username,
-        meeting_title: '',
-        due_date: dueDate || null,
-        priority,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      const localTasks = await getLocalTasks(token);
-      await saveLocalTasks([newTask, ...localTasks], token, currentUser);
-      onCreated(newTask);
+      const res = await requestJson(TASKS_API, token, {
+        method: 'POST',
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          assigned_to: assignedTo,
+          assigned_by: currentUser.username,
+          meeting_title: '',
+          due_date: dueDate || null,
+          priority,
+          status: 'pending',
+        }),
+      });
+      onCreated(res);
       setTitle(''); setDescription(''); setAssignedTo(''); setPriority('medium'); setDueDate('');
       setOpen(false);
-    } finally { setSaving(false); }
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!open) {
