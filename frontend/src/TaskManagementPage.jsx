@@ -288,44 +288,49 @@ function KanbanCard({ task, users, token, currentUser, onUpdate, onDelete }) {
     const next = cycle[task.status] || 'pending';
     setUpdating(true);
     try {
-      const localTasks = await getLocalTasks(token);
-      const updatedTasks = localTasks.map(t => {
-        if (t.id === task.id) {
-          return { ...t, status: next, updated_at: new Date().toISOString() };
-        }
-        return t;
+      const res = await requestJson(`${TASKS_API}/${task.id}`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: next }),
       });
-      await saveLocalTasks(updatedTasks, token, currentUser);
-      const updatedTask = updatedTasks.find(t => t.id === task.id);
-      onUpdate(updatedTask);
-    } finally { setUpdating(false); }
+      onUpdate(res);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleReassign = async () => {
     if (!newAssignee) return;
     setUpdating(true);
     try {
-      const localTasks = await getLocalTasks(token);
-      const updatedTasks = localTasks.map(t => {
-        if (t.id === task.id) {
-          return { ...t, assigned_to: newAssignee, updated_at: new Date().toISOString() };
-        }
-        return t;
+      const res = await requestJson(`${TASKS_API}/${task.id}`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({ assigned_to: newAssignee }),
       });
-      await saveLocalTasks(updatedTasks, token, currentUser);
-      const updatedTask = updatedTasks.find(t => t.id === task.id);
-      onUpdate(updatedTask);
+      onUpdate(res);
       setReassigning(false);
       setNewAssignee('');
-    } finally { setUpdating(false); }
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleDelete = async () => {
     if (!window.confirm('Delete this task?')) return;
-    const localTasks = await getLocalTasks(token);
-    const filteredTasks = localTasks.filter(t => t.id !== task.id);
-    await saveLocalTasks(filteredTasks, token, currentUser);
-    onDelete(task.id);
+    setUpdating(true);
+    try {
+      await requestJson(`${TASKS_API}/${task.id}`, token, {
+        method: 'DELETE',
+      });
+      onDelete(task.id);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   return (
