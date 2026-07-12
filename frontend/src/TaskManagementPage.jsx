@@ -130,38 +130,50 @@ export async function saveLocalTasks(tasks, token, currentUser) {
   const serverById = new Map(serverTasks.map(task => [task.id, task]));
   const desiredById = new Map(tasks.map(task => [task.id, task]));
 
+  const promises = [];
+
   for (const task of tasks) {
     const existing = serverById.get(task.id);
     if (!existing) {
-      await requestJson(TASKS_API, token, {
-        method: 'POST',
-        body: JSON.stringify({
-          title: task.title,
-          description: task.description || '',
-          assigned_to: task.assigned_to,
-          assigned_by: task.assigned_by || currentUser?.username,
-          meeting_title: task.meeting_title || '',
-          due_date: task.due_date || null,
-          priority: task.priority || 'medium',
-          status: task.status || 'pending',
-        }),
-      });
+      promises.push(
+        requestJson(TASKS_API, token, {
+          method: 'POST',
+          body: JSON.stringify({
+            title: task.title,
+            description: task.description || '',
+            assigned_to: task.assigned_to,
+            assigned_by: task.assigned_by || currentUser?.username,
+            meeting_title: task.meeting_title || '',
+            due_date: task.due_date || null,
+            priority: task.priority || 'medium',
+            status: task.status || 'pending',
+          }),
+        })
+      );
       continue;
     }
 
     const changed = diffTask(existing, task);
     if (Object.keys(changed).length > 0) {
-      await requestJson(`${TASKS_API}/${task.id}`, token, {
-        method: 'PATCH',
-        body: JSON.stringify(changed),
-      });
+      promises.push(
+        requestJson(`${TASKS_API}/${task.id}`, token, {
+          method: 'PATCH',
+          body: JSON.stringify(changed),
+        })
+      );
     }
   }
 
   for (const task of serverTasks.filter(item => !desiredById.has(item.id))) {
-    await requestJson(`${TASKS_API}/${task.id}`, token, {
-      method: 'DELETE',
-    });
+    promises.push(
+      requestJson(`${TASKS_API}/${task.id}`, token, {
+        method: 'DELETE',
+      })
+    );
+  }
+
+  if (promises.length > 0) {
+    await Promise.all(promises);
   }
 
   return getLocalTasks(token);
