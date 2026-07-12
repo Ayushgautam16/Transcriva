@@ -15,7 +15,7 @@ const PARTICLE_COLORS = ['#EF9F27','#D85A30','#FAC775','#BA7517','#F5C4B3','#FAE
 
 function Particles() {
   const items = useMemo(() => {
-    return Array.from({ length: 24 }, (_, i) => ({
+    return Array.from({ length: 12 }, (_, i) => ({
       id: i,
       size: 10 + Math.random() * 22,
       left: 5 + Math.random() * 90,
