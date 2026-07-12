@@ -286,6 +286,11 @@ function KanbanCard({ task, users, token, currentUser, onUpdate, onDelete }) {
   const cycleStatus = async () => {
     const cycle = { pending: 'in_progress', in_progress: 'done', done: 'pending' };
     const next = cycle[task.status] || 'pending';
+    const originalStatus = task.status;
+
+    // Optimistic UI Update
+    onUpdate({ ...task, status: next, updated_at: new Date().toISOString() });
+
     setUpdating(true);
     try {
       const res = await requestJson(`${TASKS_API}/${task.id}`, token, {
@@ -294,6 +299,7 @@ function KanbanCard({ task, users, token, currentUser, onUpdate, onDelete }) {
       });
       onUpdate(res);
     } catch (e) {
+      onUpdate({ ...task, status: originalStatus });
       alert(e.message);
     } finally {
       setUpdating(false);
