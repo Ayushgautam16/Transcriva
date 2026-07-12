@@ -92,7 +92,7 @@ const SEED_TASKS = [
   }
 ];
 
-async function requestJson(url, token, options = {}) {
+export async function requestJson(url, token, options = {}) {
   const response = await fetch(url, {
     ...options,
     headers: {

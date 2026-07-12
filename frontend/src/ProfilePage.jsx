@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, Clock, Circle, Trash2, ChevronDown, X, AlertCircle, Loader2 } from 'lucide-react';
-import { getLocalTasks, saveLocalTasks } from './TaskManagementPage';
+import { getLocalTasks, saveLocalTasks, requestJson } from './TaskManagementPage';
 
 const PRIORITY_META = {
   high:   { label: 'High',   color: '#D85A30', bg: 'rgba(216,90,48,0.1)',   border: 'rgba(216,90,48,0.3)'  },
@@ -31,25 +31,31 @@ function TaskCard({ task, token, users, onUpdate, onDelete, currentUser }) {
     const next = cycle[task.status] || 'pending';
     setUpdating(true);
     try {
-      const localTasks = await getLocalTasks(token);
-      const updatedTasks = localTasks.map(t => {
-        if (t.id === task.id) {
-          return { ...t, status: next, updated_at: new Date().toISOString() };
-        }
-        return t;
+      const res = await requestJson(`/api/tasks/${task.id}`, token, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: next }),
       });
-      await saveLocalTasks(updatedTasks, token, currentUser);
-      const updatedTask = updatedTasks.find(t => t.id === task.id);
-      onUpdate(updatedTask);
-    } finally { setUpdating(false); }
+      onUpdate(res);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleDelete = async () => {
     if (!window.confirm('Delete this task?')) return;
-    const localTasks = await getLocalTasks(token);
-    const filteredTasks = localTasks.filter(t => t.id !== task.id);
-    await saveLocalTasks(filteredTasks, token, currentUser);
-    onDelete(task.id);
+    setUpdating(true);
+    try {
+      await requestJson(`/api/tasks/${task.id}`, token, {
+        method: 'DELETE',
+      });
+      onDelete(task.id);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   return (
