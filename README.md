@@ -51,6 +51,7 @@ Now powered by a high-performance **FastAPI backend** and a bespoke, responsive 
 
 3. **Set Up Environment Variables**:
    Create a `.env` file in the root directory:
+   
    ```env
    MISTRAL_API_KEY=your_mistral_api_key
    SARVAM_API_KEY=your_sarvam_api_key
