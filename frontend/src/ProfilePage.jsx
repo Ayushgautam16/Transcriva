@@ -29,6 +29,11 @@ function TaskCard({ task, token, users, onUpdate, onDelete, currentUser }) {
   const cycleStatus = async () => {
     const cycle = { pending: 'in_progress', in_progress: 'done', done: 'pending' };
     const next = cycle[task.status] || 'pending';
+    const originalStatus = task.status;
+
+    // Optimistic UI Update
+    onUpdate({ ...task, status: next, updated_at: new Date().toISOString() });
+
     setUpdating(true);
     try {
       const res = await requestJson(`/api/tasks/${task.id}`, token, {
@@ -37,6 +42,7 @@ function TaskCard({ task, token, users, onUpdate, onDelete, currentUser }) {
       });
       onUpdate(res);
     } catch (e) {
+      onUpdate({ ...task, status: originalStatus });
       alert(e.message);
     } finally {
       setUpdating(false);

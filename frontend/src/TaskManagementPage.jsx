@@ -588,19 +588,30 @@ export default function TaskManagementPage({ token, currentUser, onBack }) {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const handleUpdate = (updated) => {
-    setTasks(ts => ts.map(t => t.id === updated.id ? updated : t));
-    // Refresh dashboard after a brief delay
-    setTimeout(() => fetchAll(true), 300);
+    setTasks(ts => {
+      const nextTasks = ts.map(t => t.id === updated.id ? updated : t);
+      const dashData = getLocalDashboard(nextTasks, users);
+      setDashboard(dashData);
+      return nextTasks;
+    });
   };
 
   const handleDelete = (id) => {
-    setTasks(ts => ts.filter(t => t.id !== id));
-    setTimeout(() => fetchAll(true), 300);
+    setTasks(ts => {
+      const nextTasks = ts.filter(t => t.id !== id);
+      const dashData = getLocalDashboard(nextTasks, users);
+      setDashboard(dashData);
+      return nextTasks;
+    });
   };
 
   const handleCreated = (newTask) => {
-    setTasks(ts => [newTask, ...ts]);
-    setTimeout(() => fetchAll(true), 300);
+    setTasks(ts => {
+      const nextTasks = [newTask, ...ts];
+      const dashData = getLocalDashboard(nextTasks, users);
+      setDashboard(dashData);
+      return nextTasks;
+    });
   };
 
   // Apply filters
