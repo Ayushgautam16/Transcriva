@@ -333,7 +333,8 @@ select option {
   border-radius: 50%;
   opacity: 0;
   animation: floatParticle var(--dur, 5s) ease-in-out infinite var(--delay, 0s);
-  filter: blur(0.5px) drop-shadow(0 0 8px var(--p-color, #EF9F27));
+  box-shadow: 0 0 8px var(--p-color, #EF9F27);
+  will-change: transform, opacity;
 }
 
 /* Main Header */
@@ -805,6 +806,7 @@ select option {
   position: absolute; border-radius: 50%;
   filter: blur(80px); opacity: 0.25; pointer-events: none;
   animation: orbFloat 8s ease-in-out infinite;
+  will-change: transform;
 }
 .orb1 { width: 420px; height: 420px; background: radial-gradient(circle, #EF9F27, transparent); top: -80px; left: -80px; animation-delay: 0s; }
 .orb2 { width: 320px; height: 320px; background: radial-gradient(circle, #D85A30, transparent); bottom: -60px; right: -60px; animation-delay: -3s; }
