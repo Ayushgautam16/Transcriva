@@ -1,0 +1,242 @@
+Part 1:  (The Frontend - React)
+
+The frontend is built inside the frontend/ directory using React + Vite. It manages user authentication, tabs, modals, and the live status of the analysis pipeline.
+
+
+1. Main Application Dashboard
+
+File: frontend/src/App.jsx
+
+Key Functions:
+fetchStatus(): Polls /api/status every 1.5 seconds when an analysis is running to update the loading steps.
+handleUpload(): Uploads a local audio file via /api/upload.
+handleAnalyze(): Gathers keys, cookies, and source details, and triggers the /api/analyze POST request.
+handleChat(): Sends user questions to /api/chat to speak with the RAG assistant.
+handleClearChat(): Clears message history.
+
+
+2. User Gatekeeper
+
+File: frontend/src/LoginPage.jsx
+
+Key Functions:
+doLogin(): Submits credentials to /api/auth/login and saves the user token.
+handleRegisterSubmit(): Registers new users via /api/auth/register.
+
+
+3. Task Assigning Popup
+
+File: frontend/src/TaskAssignModal.jsx
+
+Key Functions:
+parseActionItems(): Regular expressions split the raw action items text into objects with titles and assignee hints.
+resolveAssignee(): Matches text names (e.g. "Rahul") with active user accounts.
+handleAssign(): Sends parallel REST calls to create the tasks on the backend.
+
+Detailed Function Explanation:
+- mergeUsers(fetchedUsers): Combines a default list of team members (like Ayush, Maria, Rahul) with the list of users downloaded from the database server.
+- normalizeName(value): Cleans up text names by making them lower-case, stripping extra spaces, and trimming edges.
+- resolveAssignee(assigneeHint, users): Looks at a person's name extracted from the meeting transcript (e.g. "Rahul") and automatically matches it to their database profile username ("@rahul").
+- parseActionItems(raw): Scans the raw text summary from the AI and pulls out numbered tasks, deadlines, and suggested owners (e.g. Person: Maria).
+- TaskRow(...): The visual template card for a single task row showing the task input, assignee dropdown, priority selector, and due date calendar.
+- TaskAssignModal(...): The main popup window component that orchestrates opening action items, loading users, and handling the submit requests.
+
+
+
+4. Project Kanban Board
+
+File: frontend/src/TaskManagementPage.jsx
+
+Key Functions:
+loadData(): Fetches the overall list of users and active tasks.
+handleReassign(): Transfers task ownership.
+handleUpdateStatus(): Drags/drops or switches status between Pending, In Progress, and Done.
+handleDelete(): Deletes tasks (admin only).
+
+
+--------------------------------------------------
+
+
+Part 2:  (The Backend Server - FastAPI)
+
+The server acts as the central router, verifying tokens and modifying the SQLite database.
+
+
+File: server.py
+
+Key Endpoints & Functions:
+@app.post("/api/auth/register"): Validates and inserts new credentials using bcrypt password hashing.
+@app.post("/api/auth/login"): Validates credentials and generates bearer authentication tokens.
+@app.post("/api/upload"): Receives multi-part file uploads and writes them to the downloads/ directory.
+@app.post("/api/analyze"): Kicks off the background worker thread.
+@app.get("/api/tasks"): Queries the SQLite database to return tasks. Admins see all tasks, members only see their own.
+@app.post("/api/tasks"): Checks permissions and creates a task entry.
+@app.patch("/api/tasks/{task_id}"): Modifies task properties.
+@app.delete("/api/tasks/{task_id}"): Deletes a task.
+
+
+--------------------------------------------------
+
+
+Part 3:  (The Core AI Engine)
+
+These backend modules process audio and run prompts using LangChain + Mistral AI.
+
+
+1. The Transcriber
+
+File: core/transcriber.py
+
+Key Functions:
+transcribe_all(): Master loop processing chunks sequentially.
+transcribe_chunk(): Routes chunks to either local OpenAI Whisper or the Sarvam AI API (for Hinglish translations).
+
+
+2. The Summarizer
+
+File: core/summarizer.py
+
+Key Functions:
+split_transcript(): Uses RecursiveCharacterTextSplitter to cut text into 3,000-character segments.
+summarize(): Uses a map-reduce pipeline. First, it summarizes segments (map_prompt), then combines them into one final summary (combined_prompt).
+generate_title(): Instructs Mistral to output a professional title under 8 words.
+
+
+3. The Extractor
+
+File: core/extractor.py
+
+Key Functions:
+extract_action_items(): Prompts Mistral to extract who does what and deadlines.
+extract_key_decisions(): Extracts critical decisions.
+extract_questions(): Extracts unresolved questions.
+
+
+4. Vector Storage
+
+File: core/vector_store.py
+
+Key Functions:
+build_vector_store(): Splits transcription into small chunks (500 chars), embeds them with HuggingFace (all-MiniLM-L6-v2), and inserts them into a local Chroma DB store.
+get_retriever(): Converts Chroma into a similarity retriever object.
+
+
+5. RAG Chain
+
+File: core/rag_engine.py
+
+Key Functions:
+build_rag_chain(): Configures the QA pipeline.
+ask_question(): Feeds your question and matched context to Mistral, returning the final response.
+
+
+--------------------------------------------------
+
+
+Part 4: The Helpers (The Audio Processor)
+
+File: utils/audio_processor.py
+
+Key Functions:
+process_input(): The orchestrator.
+download_youtube_audio(): Invokes yt-dlp to fetch sound tracks from YouTube URLs.
+convert_to_wav(): Translates MP3/MP4 files to clean WAV format.
+chunk_audio(): Splits long audio files using pydub into smaller segments so they don't exceed AI limits.
+
+
+
+1. Which Frontend Function is Called?
+When you click the orange Assign 10 Tasks button:
+
+File: 
+
+frontend/src/TaskAssignModal.jsx
+Function: handleAssign()
+This function collects all tasks that have a user selected in the "Assign to" dropdown and sends them to the backend server by calling: requestJson('/api/tasks', token, { method: 'POST', body: ... })
+
+2. Which Backend Function is Called?
+The server receives the network request at the /api/tasks endpoint:
+
+File: 
+
+server.py
+Function: create_task()
+This function checks the user's role permissions (admins can assign tasks to anyone; members can only assign tasks to themselves) and runs the query to save them.
+
+3. Where is the Data Stored?
+The tasks are saved inside a database file in your project folder:
+
+File Path: c:\Users\ayush\OneDrive\Desktop\transcriva ai summarizer\tasks.db
+Database System: SQLite
+Database Table: tasks
+The backend runs this SQL query to write the data permanently:
+
+sql
+INSERT INTO tasks (
+    id, title, description, assigned_to, assigned_by, 
+    meeting_title, due_date, priority, status, created_at, updated_at
+) 
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+
+
+
+When you assign a task—either via the Assign Meeting Tasks modal or manually—here is exactly what happens behind the scenes:
+
+1. Frontend Pre-Resolution & Setup
+Extracting Tasks: The 
+
+TaskAssignModal
+ parses the action items from the meeting transcription.
+Loading Users: It fetches the list of available team members from the backend (/api/users).
+Auto-Matching: The 
+
+resolveAssignee
+ helper attempts to auto-match names found in action items to actual usernames (e.g., mapping "ayush" or "maria").
+2. Clicking "Assign Tasks" (Frontend API Calls)
+When you click Assign Tasks, the 
+
+handleAssign
+ function:
+
+Filters out any unassigned action items.
+Sends parallel POST requests to /api/tasks for each assigned task, passing the task payload (title, description, assignee, creator, due date, priority, and status) along with the authorization token.
+3. Backend Validation & Database Persistence (FastAPI)
+The requests hit the 
+
+create_task
+ endpoint in the backend, performing these checks and operations:
+
+Authorization Check: Verifies who is assigning the task. Non-admin users are only allowed to assign tasks to themselves; assigning to others returns a 403 Forbidden error.
+Assignee Verification: Checks the database to ensure the assignee exists in the system.
+Data Generation: Generates a unique task ID (e.g., task_4d5b2...) and records timestamps (created_at and updated_at).
+Database Write: Inserts the structured task into the SQLite database (tasks table) inside tasks.db.
+Response: Commits the changes and returns the newly created task object to the frontend.
+4. UI Update
+The modal transitions to a success screen showing how many tasks were assigned.
+These tasks now dynamically populate the Task Management Board for admins or under My Tasks for individual team members via /api/tasks fetches.
+
+
+
+
+
+
+What is a Kanban Board?
+A Kanban Board is a visual way to track tasks and see how work is moving from start to finish.
+
+Imagine you have a whiteboard divided into 3 vertical columns:
+
+Pending (To Do): Tasks that are waiting to be started (e.g., "Design overall project architecture").
+In Progress: Tasks that team members are working on right now (e.g., "Maria is developing the float meeting interface").
+Done: Tasks that are completely finished (e.g., "Uploaded meeting audio").
+How does it work in this project?
+Every task is represented by a small card on the screen.
+When you start working on a task, you drag it or move it from the Pending column to the In Progress column.
+Once you finish the task, you move it to the Done column.
+This is managed by the function handleUpdateStatus() inside 
+
+TaskManagementPage.jsx
+, which instantly saves the new column status to the SQLite database.
+
+
+
