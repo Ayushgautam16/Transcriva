@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Send, Loader2, CheckCircle } from 'lucide-react';
-import { getLocalTasks, saveLocalTasks } from './TaskManagementPage';
+import { requestJson } from './TaskManagementPage';
 
 const PRIORITIES = ['high', 'medium', 'low'];
 
@@ -234,28 +234,25 @@ export default function TaskAssignModal({ result, token, currentUser, onClose })
     const skipped = items.length - toSend.length;
 
     try {
-      const localTasks = await getLocalTasks(token);
-      const newTasks = [];
-
-      toSend.forEach((it, idx) => {
-        const newTask = {
-          id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${idx}`,
-          title: it.title,
-          description: `From meeting: "${result?.title || 'Untitled'}"`,
-          assigned_to: it.assigned_to,
-          assigned_by: currentUser.username,
-          meeting_title: result?.title || '',
-          due_date: it.due_date || null,
-          priority: it.priority,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        newTasks.push(newTask);
-        sent++;
+      const promises = toSend.map(it => {
+        return requestJson('/api/tasks', token, {
+          method: 'POST',
+          body: JSON.stringify({
+            title: it.title,
+            description: `From meeting: "${result?.title || 'Untitled'}"`,
+            assigned_to: it.assigned_to,
+            assigned_by: currentUser.username,
+            meeting_title: result?.title || '',
+            due_date: it.due_date || null,
+            priority: it.priority,
+            status: 'pending',
+          }),
+        }).then(() => {
+          sent++;
+        });
       });
 
-      await saveLocalTasks([...newTasks, ...localTasks], token, currentUser);
+      await Promise.all(promises);
 
       const successfulTitles = toSend.map(it => it.title);
       setItems(prev => prev.map(p =>
