@@ -15,7 +15,7 @@ handleChat(): Sends user questions to /api/chat to speak with the RAG assistant.
 handleClearChat(): Clears message history.
 
 
-2. User Gatekeeper
+2. User 
 
 File: frontend/src/LoginPage.jsx
 
@@ -133,7 +133,7 @@ ask_question(): Feeds your question and matched context to Mistral, returning th
 --------------------------------------------------
 
 
-Part 4: The Helpers (The Audio Processor)
+Part 4: (The Audio Processor)
 
 File: utils/audio_processor.py
 
