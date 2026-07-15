@@ -474,8 +474,10 @@ for key, default in {
     "pipeline_steps": {},
     "source_type": "YouTube URL",
 }.items():
+
     if key not in st.session_state:
         st.session_state[key] = default
+
 
 # ─── Helpers ────────────────────────────────────────────────────────────────────
 def draw_timeline(placeholder, steps: dict):
