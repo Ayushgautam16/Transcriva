@@ -439,7 +439,7 @@ div[data-baseweb="tab-highlight-line"] {
     background-color: rgba(13, 13, 23, 0.8) !important;
     border: 1px solid var(--border) !important;
     border-radius: 10px !important;
-    
+
     color: var(--text) !important;
     font-family: 'Inter', sans-serif !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
@@ -462,6 +462,7 @@ label { color: var(--text-muted) !important; font-size: 0.8rem !important; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 </style>
+
 """, unsafe_allow_html=True)
 
 # ─── Session State Init ──────────────────────────────────────────────────────────
