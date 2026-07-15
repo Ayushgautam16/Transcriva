@@ -38,8 +38,10 @@ def run_pipeline(
 
     return {
         "title": title,
+
         "transcript": transcript,
         "summary": summary,
+        
         "action_items": action_item,
         "key_decisions": decisions,
         "open_questions": questions,
