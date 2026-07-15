@@ -38,15 +38,14 @@ def run_pipeline(
 
     return {
         "title": title,
-
         "transcript": transcript,
         "summary": summary,
-        
         "action_items": action_item,
         "key_decisions": decisions,
         "open_questions": questions,
         "rag_chain": rag_chain,
     }
+    
 
 if __name__ == "__main__":
     # CLI entry point
@@ -57,7 +56,6 @@ if __name__ == "__main__":
     result = run_pipeline(source, language, youtube_cookies_file, youtube_cookies_browser)
 
     print("\n" + "=" * 60)
-
     print(f"📌 Title: {result['title']}")
 
     print(f"\n📋 Summary:\n{result['summary']}")
