@@ -3,9 +3,39 @@ import yt_dlp
 from pydub import AudioSegment
 
 import os
+import shutil
 
 DOWNLOAD_DIR = 'downloads'
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+def cleanup_temp_files(files: list[str]) -> None:
+    """Remove temporary files (e.g. converted WAVs, audio chunks, uploads) to save disk space."""
+    for filepath in files:
+        if filepath and os.path.exists(filepath):
+            try:
+                os.remove(filepath)
+                print(f"[INFO] Cleaned temporary file: {filepath}")
+            except Exception as e:
+                print(f"[WARN] Failed to remove temp file {filepath}: {e}")
+
+def clean_downloads_folder() -> None:
+    """Purge all temporary audio and upload files in downloads/ and downloades/."""
+    for folder in [DOWNLOAD_DIR, "downloades"]:
+        if os.path.exists(folder):
+            for filename in os.listdir(folder):
+                filepath = os.path.join(folder, filename)
+                try:
+                    if os.path.isfile(filepath) or os.path.islink(filepath):
+                        os.unlink(filepath)
+                        print(f"[INFO] Purged temporary file: {filepath}")
+                except Exception as e:
+                    print(f"[WARN] Failed to purge {filepath}: {e}")
+            if folder == "downloades":
+                try:
+                    shutil.rmtree(folder, ignore_errors=True)
+                except Exception:
+                    pass
+
 
 def download_youtube_audio(
     url: str,

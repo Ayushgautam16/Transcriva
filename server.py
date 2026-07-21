@@ -17,11 +17,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 
-from utils.audio_processor import process_input
+from utils.audio_processor import process_input, cleanup_temp_files, clean_downloads_folder
 
 load_dotenv()
 
 app = FastAPI()
+
+@app.on_event("startup")
+def startup_event():
+    clean_downloads_folder()
 
 app.add_middleware(
     CORSMiddleware,
@@ -598,6 +602,7 @@ def run_pipeline_thread(source, language, whisper_model, youtube_cookies_file, y
         update_step("transcript", "active")
         transcript = transcribe_all(chunks, language, whisper_model=whisper_model)
         update_step("transcript", "done")
+        cleanup_temp_files(chunks)
 
         update_step("title", "active")
         title = generate_title(transcript)

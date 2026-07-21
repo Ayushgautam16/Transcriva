@@ -4,7 +4,7 @@ import time
 import os
 
 from dotenv import load_dotenv
-from utils.audio_processor import process_input
+from utils.audio_processor import process_input, cleanup_temp_files
 from core.transcriber import transcribe_all
 
 from core.summarizer import summarize, generate_title
@@ -654,6 +654,7 @@ if run_btn:
             update_step("transcript", "active")
             transcript = transcribe_all(chunks, language, whisper_model=whisper_model)
             update_step("transcript", "done")
+            cleanup_temp_files(chunks)
 
             update_step("title", "active")
             title = generate_title(transcript)
