@@ -5,9 +5,3 @@ downloades/
 .venv/
 __pycache__/
 *.pyc
-*.wav
-*.mp3
-*.m4a
-*.mp4
-tasks.db-wal
-tasks.db-shm
