@@ -179,6 +179,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .metric-card:hover {
+
     border-color: var(--accent-2);
     box-shadow: 0 4px 15px rgba(6, 182, 212, 0.1);
 }
