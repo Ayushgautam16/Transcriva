@@ -26,12 +26,14 @@ def clean_downloads():
                         os.remove(file_path)
                         bytes_freed += size
                         count += 1
+
                         print(f"[CLEANED] Removed file: {file_path} ({size / (1024*1024):.2f} MB)")
                     except Exception as e:
                         print(f"[WARN] Failed to remove {file_path}: {e}")
             
             # Remove empty directory if it's the typo folder 'downloades'
             if dir_name == "downloades":
+
                 try:
                     shutil.rmtree(dir_name)
                     print(f"[CLEANED] Removed empty folder: {dir_name}")
@@ -45,6 +47,7 @@ def clean_pycache():
     count = 0
     ignored_dirs = {".venv", "node_modules", ".git"}
     for root, dirs, files in os.walk("."):
+        
         # Prevent walking into ignored directories
         dirs[:] = [d for d in dirs if d not in ignored_dirs]
         for dir_name in list(dirs):
