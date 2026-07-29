@@ -20,6 +20,7 @@ def clean_downloads():
                 for f in files:
                     file_path = os.path.join(root, f)
                     try:
+                        
                         size = os.path.getsize(file_path)
                         os.remove(file_path)
                         bytes_freed += size
