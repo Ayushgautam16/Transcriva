@@ -16,11 +16,12 @@ def clean_downloads():
     dirs_to_clean = ["downloads", "downloades"]
     for dir_name in dirs_to_clean:
         if os.path.exists(dir_name):
+
             for root, dirs, files in os.walk(dir_name):
-                for f in files:
+                for f in files:        
                     file_path = os.path.join(root, f)
                     try:
-                        
+
                         size = os.path.getsize(file_path)
                         os.remove(file_path)
                         bytes_freed += size
