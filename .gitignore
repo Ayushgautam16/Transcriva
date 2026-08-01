@@ -1,0 +1,76 @@
+# ==========================================
+# Transcriva AI Summarizer - .gitignore
+# ==========================================
+
+# 1. Environment & Secrets
+.env
+.env.*
+*.env
+*.pem
+*.key
+
+# 2. Python & Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+pythonenvs/
+.venv*/
+
+# 3. Python Caches & Compiled Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# 4. Databases & Storage
+*.db
+*.db-shm
+*.db-wal
+*.sqlite3
+tasks.db
+tasks_db.json
+users_db.json
+vector_db/
+
+# 5. Downloaded & Temporary Audio / Media Files
+downloads/
+downloades/
+*.m4a
+*.mp3
+*.wav
+*.mp4
+*.avi
+*.flac
+*.aac
+*.ogg
+*.webm
+
+# 6. IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# 7. Operating System Files
+.DS_Store
+.DS_Store?
+ehthumbs.db
+Icon?
+Thumbs.db
+desktop.ini
+
+# 8. Logs & Temporary Files
+*.log
+logs/
+tmp/
+temp/
+clean_temp.log
