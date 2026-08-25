@@ -1,8 +1,6 @@
 import streamlit as st
-
 import time
 import os
-
 from dotenv import load_dotenv
 from utils.audio_processor import process_input, cleanup_temp_files
 from core.transcriber import transcribe_all
@@ -15,6 +13,7 @@ load_dotenv()
 
 # ─── Page Config ────────────────────────────────────────────────────────────────
 st.set_page_config(
+    
     page_title="Transcriva AI - Meeting Intelligence",
     page_icon="🎬",
     layout="wide",
